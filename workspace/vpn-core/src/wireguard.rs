@@ -59,14 +59,11 @@ impl WireGuardConfig {
         Ok(WireGuardConfig {
             private_key: private_key
                 .ok_or_else(|| WireGuardError::MissingField("PrivateKey".into()))?,
-            address: address
-                .ok_or_else(|| WireGuardError::MissingField("Address".into()))?,
-            dns: dns
-                .ok_or_else(|| WireGuardError::MissingField("DNS".into()))?,
+            address: address.ok_or_else(|| WireGuardError::MissingField("Address".into()))?,
+            dns: dns.ok_or_else(|| WireGuardError::MissingField("DNS".into()))?,
             peer_public_key: peer_public_key
                 .ok_or_else(|| WireGuardError::MissingField("PublicKey".into()))?,
-            endpoint: endpoint
-                .ok_or_else(|| WireGuardError::MissingField("Endpoint".into()))?,
+            endpoint: endpoint.ok_or_else(|| WireGuardError::MissingField("Endpoint".into()))?,
             allowed_ips: allowed_ips
                 .ok_or_else(|| WireGuardError::MissingField("AllowedIPs".into()))?,
             persistent_keepalive,

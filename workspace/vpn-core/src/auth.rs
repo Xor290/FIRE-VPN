@@ -68,11 +68,7 @@ pub fn register(
     })
 }
 
-pub fn login(
-    base_url: &str,
-    email: &str,
-    password: &str,
-) -> Result<AuthResponse, AuthError> {
+pub fn login(base_url: &str, email: &str, password: &str) -> Result<AuthResponse, AuthError> {
     let client = reqwest::blocking::Client::new();
     let resp = client
         .post(format!("{}/auth/login", base_url))

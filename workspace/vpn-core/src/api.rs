@@ -37,7 +37,6 @@ pub struct PeerStatus {
     pub server: Server,
 }
 
-
 #[derive(Deserialize)]
 struct ApiSuccess<T> {
     data: T,
@@ -47,7 +46,6 @@ struct ApiSuccess<T> {
 struct ApiErrorResp {
     error: String,
 }
-
 
 pub struct ApiClient {
     base_url: String,

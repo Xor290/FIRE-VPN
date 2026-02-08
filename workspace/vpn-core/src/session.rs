@@ -86,7 +86,10 @@ impl Session {
     }
 
     pub fn disconnect(&mut self) -> Result<(), SessionError> {
-        let server = self.current_server.as_ref().ok_or(SessionError::NotConnected)?;
+        let server = self
+            .current_server
+            .as_ref()
+            .ok_or(SessionError::NotConnected)?;
         let server_id = server.id;
         self.client.disconnect(server_id)?;
         self.current_server = None;
