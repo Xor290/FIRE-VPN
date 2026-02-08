@@ -20,10 +20,7 @@ const (
 	audience = "vpn-client"
 )
 
-type Claims struct {
-	UserID uint `json:"user_id"`
-	jwt.RegisteredClaims
-}
+type Claims = models.Claims
 
 // signingKey construit la clé de signature unique par user : JWTSecret + SessionSecret.
 func signingKey(globalSecret, sessionSecret string) []byte {

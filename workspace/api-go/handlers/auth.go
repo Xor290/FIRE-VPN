@@ -3,11 +3,13 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"vpn-api/db"
+	"vpn-api/helpers"
 	"vpn-api/middleware"
 	"vpn-api/models"
 	"vpn-api/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 func (h *AuthHandler) Register(c *gin.Context) {
@@ -28,12 +30,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	user := models.User{Username: req.Username, Email: req.Email}
-	if err := user.SetPassword(req.Password); err != nil {
+	if err := helpers.SetPassword(&user, req.Password); err != nil {
 		utils.Error(c, http.StatusInternalServerError, "failed to hash password")
 		return
 	}
 
-	if err := user.GenerateSessionSecret(); err != nil {
+	if err := helpers.GenerateSessionSecret(&user); err != nil {
 		utils.Error(c, http.StatusInternalServerError, "failed to generate session secret")
 		return
 	}
@@ -68,12 +70,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	if !user.CheckPassword(req.Password) {
+	if !helpers.CheckPassword(user, req.Password) {
 		utils.Error(c, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
-	if err := user.GenerateSessionSecret(); err != nil {
+	if err := helpers.GenerateSessionSecret(user); err != nil {
 		utils.Error(c, http.StatusInternalServerError, "failed to generate session secret")
 		return
 	}

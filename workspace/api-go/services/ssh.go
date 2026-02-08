@@ -64,7 +64,6 @@ func (s *SSHClient) run(serverIP, command string) (string, error) {
 	return string(output), nil
 }
 
-// AddPeer ajoute un peer WireGuard sur le VPS.
 func (s *SSHClient) AddPeer(server *models.VPNServer, peerPublicKey, peerAllowedIP string) error {
 	cmd := fmt.Sprintf("wg set wg0 peer %s allowed-ips %s", peerPublicKey, peerAllowedIP)
 	_, err := s.run(server.IP, cmd)
@@ -72,7 +71,6 @@ func (s *SSHClient) AddPeer(server *models.VPNServer, peerPublicKey, peerAllowed
 		return fmt.Errorf("failed to add peer on %s: %w", server.IP, err)
 	}
 
-	// Sauvegarder la config pour persistance
 	_, err = s.run(server.IP, "wg-quick save wg0")
 	if err != nil {
 		return fmt.Errorf("failed to save wg config on %s: %w", server.IP, err)
@@ -81,7 +79,6 @@ func (s *SSHClient) AddPeer(server *models.VPNServer, peerPublicKey, peerAllowed
 	return nil
 }
 
-// RemovePeer supprime un peer WireGuard du VPS.
 func (s *SSHClient) RemovePeer(server *models.VPNServer, peerPublicKey string) error {
 	cmd := fmt.Sprintf("wg set wg0 peer %s remove", peerPublicKey)
 	_, err := s.run(server.IP, cmd)

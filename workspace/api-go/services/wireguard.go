@@ -13,10 +13,7 @@ import (
 	"vpn-api/models"
 )
 
-type KeyPair struct {
-	PrivateKey string
-	PublicKey  string
-}
+type KeyPair = models.KeyPair
 
 func GenerateKeyPair() (*KeyPair, error) {
 	var privateKey [32]byte
