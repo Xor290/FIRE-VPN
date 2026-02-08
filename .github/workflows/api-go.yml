@@ -1,0 +1,68 @@
+name: API Go CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "workspace/api-go/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "workspace/api-go/**"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vpn_admin
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: vpn_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vpn_admin -d vpn_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      API_PORT: "8080"
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_USER: vpn_admin
+      DB_PASSWORD: testpassword
+      DB_NAME: vpn_db
+      DB_SSLMODE: disable
+      JWT_SECRET: ci-test-secret
+      SSH_KEY_PATH: /dev/null
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache-dependency-path: workspace/api-go/go.sum
+
+      - name: Verify modules
+        working-directory: workspace/api-go
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
+      - name: Vet
+        working-directory: workspace/api-go
+        run: go vet ./...
+
+      - name: Build
+        working-directory: workspace/api-go
+        run: go build ./...
+
+      - name: Test
+        working-directory: workspace/api-go
+        run: go test ./...

@@ -109,6 +109,9 @@ erDiagram
 
 ```
 FIRE-VPN/
+├── .github/workflows/
+│   ├── api-go.yml          # CI API Go
+│   └── vpn-core.yml        # CI lib Rust
 ├── docker/
 │   └── docker-compose.yml  # PostgreSQL 16
 └── workspace/
@@ -273,6 +276,35 @@ flowchart LR
 
 - Requetes parametrees via GORM (protection injection SQL)
 - Cles privees jamais exposees dans les reponses API (sauf config client a la connexion)
+
+## CI/CD
+
+Deux pipelines GitHub Actions, declenchees sur push et pull request vers `main` :
+
+```mermaid
+flowchart LR
+    subgraph "API Go CI"
+        direction TB
+        G1["go mod tidy<br/>(verification modules)"] --> G2["go vet<br/>(analyse statique)"]
+        G2 --> G3["go build"]
+        G3 --> G4["go test"]
+    end
+
+    subgraph "vpn-core CI"
+        direction TB
+        R1["cargo fmt --check<br/>(formatage)"] --> R2["cargo clippy<br/>(linting)"]
+        R2 --> R3["cargo build --lib"]
+        R3 --> R4["cargo test"]
+    end
+
+    Push["Push / PR"] --> G1
+    Push --> R1
+```
+
+| Pipeline | Declencheur | Services | Etapes |
+|----------|-------------|----------|--------|
+| **API Go** | `workspace/api-go/**` | PostgreSQL 16 (service container) | mod tidy, vet, build, test |
+| **vpn-core** | `workspace/vpn-core/**` | - | fmt, clippy, build, test |
 
 ## Documentation detaillee
 

@@ -1,0 +1,49 @@
+name: vpn-core CI
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - "workspace/vpn-core/**"
+    pull_request:
+        branches: [main]
+        paths:
+            - "workspace/vpn-core/**"
+
+jobs:
+    build-and-test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  components: rustfmt, clippy
+
+            - name: Cache Cargo
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry
+                      ~/.cargo/git
+                      workspace/vpn-core/target
+                  key: ${{ runner.os }}-cargo-${{ hashFiles('workspace/vpn-core/Cargo.lock') }}
+                  restore-keys: ${{ runner.os }}-cargo-
+
+            - name: Format check
+              working-directory: workspace/vpn-core
+              run: cargo fmt --check
+
+            - name: Clippy
+              working-directory: workspace/vpn-core
+              run: cargo clippy -- -D warnings
+
+            - name: Build
+              working-directory: workspace/vpn-core
+              run: cargo build --lib
+
+            - name: Test
+              working-directory: workspace/vpn-core
+              run: cargo test
