@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: firevpn-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-vpn_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me-in-production}
+      POSTGRES_DB: ${DB_NAME:-vpn_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

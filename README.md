@@ -103,12 +103,14 @@ erDiagram
 | API Backend | Go 1.24, Gin, GORM, PostgreSQL, golang-jwt, curve25519, SSH |
 | Lib Client | Rust 2021, reqwest, serde, thiserror |
 | VPN | WireGuard (kernel Linux sur VPS) |
-| Base de donnees | PostgreSQL 13+ |
+| Base de donnees | PostgreSQL 16 (Docker) |
 
 ## Structure du projet
 
 ```
 FIRE-VPN/
+├── docker/
+│   └── docker-compose.yml  # PostgreSQL 16
 └── workspace/
     ├── api-go/             # API backend Go
     │   ├── main.go         # Point d'entree
@@ -133,18 +135,20 @@ FIRE-VPN/
 
 - **Go** 1.24+
 - **Rust** (edition 2021)
-- **PostgreSQL** 13+
+- **Docker** et **Docker Compose**
 - **VPS** avec WireGuard installe et accessible via SSH
 - Cle SSH configuree pour l'acces aux VPS
 
 ## Installation
 
-### Base de donnees
+### Base de donnees (Docker)
 
-```sql
-CREATE USER vpn_admin WITH PASSWORD 'change-me-in-production';
-CREATE DATABASE vpn_db OWNER vpn_admin;
+```bash
+cd docker
+docker compose up -d
 ```
+
+PostgreSQL 16 demarre sur le port `5432`. La base, l'utilisateur et le mot de passe sont configures via les variables d'environnement (voir section Configuration). Les valeurs par defaut correspondent au `.env` de l'API.
 
 ### API Go
 
