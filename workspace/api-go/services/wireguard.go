@@ -7,10 +7,11 @@ import (
 	"net"
 	"strings"
 
-	"golang.org/x/crypto/curve25519"
-	"gorm.io/gorm"
 	"vpn-api/db"
 	"vpn-api/models"
+
+	"golang.org/x/crypto/curve25519"
+	"gorm.io/gorm"
 )
 
 type KeyPair = models.KeyPair
