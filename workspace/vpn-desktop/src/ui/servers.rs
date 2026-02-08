@@ -138,6 +138,7 @@ pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn server_card(
     ui: &mut egui::Ui,
     idx: usize,

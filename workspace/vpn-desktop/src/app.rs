@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use std::sync::Arc;
 use vpn_core::api::Server;
 use vpn_core::session::Session;
 
@@ -33,16 +32,12 @@ pub struct VpnApp {
     selected_server: Option<usize>,
     is_connecting: bool,
     connection_status: String,
-    runtime: Arc<tokio::runtime::Runtime>,
 }
 
 impl VpnApp {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         let config_path = Self::get_config_path();
         let config = Self::load_config(&config_path);
-
-        let runtime =
-            Arc::new(tokio::runtime::Runtime::new().expect("Failed to create tokio runtime"));
 
         Self {
             state: AppState::Login,
@@ -57,7 +52,6 @@ impl VpnApp {
             selected_server: None,
             is_connecting: false,
             connection_status: "Déconnecté".to_string(),
-            runtime,
             config,
         }
     }
