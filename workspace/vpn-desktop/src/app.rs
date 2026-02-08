@@ -263,10 +263,6 @@ impl VpnApp {
         }
     }
 
-    pub fn get_state(&self) -> &AppState {
-        &self.state
-    }
-
     pub fn get_email(&mut self) -> &mut String {
         &mut self.email
     }

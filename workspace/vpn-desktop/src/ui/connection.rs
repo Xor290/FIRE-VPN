@@ -68,7 +68,6 @@ pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
 
     ui.add_space(20.0);
 
-    // ── Connection details card ────────────────────────────────────────────
     if let Some(session) = app.get_session() {
         if let Some(config) = session.current_config() {
             let address = config.address.clone();

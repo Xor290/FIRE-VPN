@@ -25,7 +25,6 @@ pub const BORDER: Color32 = Color32::from_rgb(48, 54, 61);
 pub const DISCONNECT_RED: Color32 = Color32::from_rgb(218, 54, 51);
 pub const DISCONNECT_RED_HOVER: Color32 = Color32::from_rgb(240, 70, 67);
 
-// ── Apply global theme ─────────────────────────────────────────────────────────
 pub fn apply_theme(ctx: &egui::Context) {
     let mut style = (*ctx.style()).clone();
 
@@ -101,9 +100,6 @@ pub fn apply_theme(ctx: &egui::Context) {
     ctx.set_style(style);
 }
 
-// ── Reusable drawing helpers ───────────────────────────────────────────────────
-
-/// Draw a gradient accent bar at the top of the window
 pub fn draw_top_accent(ui: &mut egui::Ui) {
     let rect = ui.available_rect_before_wrap();
     let bar = Rect::from_min_size(rect.min, Vec2::new(rect.width(), 3.0));
@@ -126,7 +122,6 @@ pub fn draw_top_accent(ui: &mut egui::Ui) {
     ui.add_space(8.0);
 }
 
-/// Styled card frame
 pub fn card_frame(ui: &mut egui::Ui, add_contents: impl FnOnce(&mut egui::Ui)) {
     egui::Frame::none()
         .fill(BG_CARD)
@@ -138,7 +133,6 @@ pub fn card_frame(ui: &mut egui::Ui, add_contents: impl FnOnce(&mut egui::Ui)) {
         });
 }
 
-/// Primary accent button (full width)
 pub fn primary_button(ui: &mut egui::Ui, text: &str, enabled: bool) -> bool {
     let size = Vec2::new(ui.available_width(), 44.0);
     let (rect, response) = ui.allocate_exact_size(size, egui::Sense::click());
@@ -155,7 +149,6 @@ pub fn primary_button(ui: &mut egui::Ui, text: &str, enabled: bool) -> bool {
 
         painter.rect_filled(rect, Rounding::same(10.0), bg);
 
-        // Subtle glow on hover
         if enabled && response.hovered() {
             painter.rect_stroke(rect, Rounding::same(10.0), Stroke::new(1.0, ACCENT_GLOW));
         }
@@ -172,7 +165,6 @@ pub fn primary_button(ui: &mut egui::Ui, text: &str, enabled: bool) -> bool {
     enabled && response.clicked()
 }
 
-/// Danger button (red, full width)
 pub fn danger_button(ui: &mut egui::Ui, text: &str) -> bool {
     let size = Vec2::new(ui.available_width(), 44.0);
     let (rect, response) = ui.allocate_exact_size(size, egui::Sense::click());
