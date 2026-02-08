@@ -1,0 +1,79 @@
+name: vpn-desktop CI
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - "workspace/vpn-desktop/**"
+            - "workspace/vpn-core/**"
+    pull_request:
+        branches: [main]
+        paths:
+            - "workspace/vpn-desktop/**"
+            - "workspace/vpn-core/**"
+
+jobs:
+    build:
+        strategy:
+            matrix:
+                include:
+                    - os: ubuntu-latest
+                      target: x86_64-unknown-linux-gnu
+                      artifact: vpn-desktop-linux-amd64
+                    - os: windows-latest
+                      target: x86_64-pc-windows-msvc
+                      artifact: vpn-desktop-windows-amd64
+
+        runs-on: ${{ matrix.os }}
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  components: rustfmt, clippy
+
+            - name: Install Linux dependencies
+              if: runner.os == 'Linux'
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y libgtk-3-dev libxdo-dev libssl-dev
+
+            - name: Cache Cargo
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry
+                      ~/.cargo/git
+                      workspace/vpn-desktop/target
+                  key: ${{ runner.os }}-desktop-${{ hashFiles('workspace/vpn-desktop/Cargo.lock') }}
+                  restore-keys: ${{ runner.os }}-desktop-
+
+            - name: Format check
+              working-directory: workspace/vpn-desktop
+              run: cargo fmt --check
+
+            - name: Clippy
+              working-directory: workspace/vpn-desktop
+              run: cargo clippy -- -D warnings
+
+            - name: Build release
+              working-directory: workspace/vpn-desktop
+              run: cargo build --release
+
+            - name: Upload artifact (Linux)
+              if: runner.os == 'Linux'
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ matrix.artifact }}
+                  path: workspace/vpn-desktop/target/release/vpn-desktop
+                  retention-days: 14
+
+            - name: Upload artifact (Windows)
+              if: runner.os == 'Windows'
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ matrix.artifact }}
+                  path: workspace/vpn-desktop/target/release/vpn-desktop.exe
+                  retention-days: 14
