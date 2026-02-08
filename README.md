@@ -7,15 +7,21 @@ Service VPN base sur WireGuard avec architecture client-serveur. Les utilisateur
 ```mermaid
 graph TB
     subgraph Clients
-        Desktop["Desktop<br/>(wg-quick)"]
-        Mobile["Mobile Android<br/>(VpnService + WireGuard SDK)"]
+        Desktop["Desktop (Rust / egui)<br/>wg-quick"]
+        Mobile["Mobile Android<br/>VpnService + WireGuard SDK"]
     end
 
-    subgraph "vpn-core (Rust)"
-        Auth["auth.rs<br/>register / login"]
-        API["api.rs<br/>ApiClient HTTP"]
-        WG["wireguard.rs<br/>Parsing config INI"]
-        Session["session.rs<br/>Orchestration"]
+    subgraph "vpn-core (Rust lib)"
+        Auth["auth/<br/>register / login"]
+        API["api/<br/>ApiClient HTTP"]
+        WG["wireguard/<br/>Parsing config INI"]
+        Session["session/<br/>Orchestration"]
+    end
+
+    subgraph "vpn-desktop (Rust / egui)"
+        UI["ui/<br/>login, servers, connection"]
+        Theme["ui/theme<br/>Design system"]
+        Tunnel["vpn/tunnel<br/>wg-quick"]
     end
 
     subgraph "API Go (Gin)"
@@ -30,11 +36,13 @@ graph TB
         VPS2["VPS WireGuard<br/>Data plane"]
     end
 
-    Desktop --> Session
+    Desktop --> UI
+    UI --> Session
     Mobile --> Session
     Session --> Auth
     Session --> API
     API --> WG
+    Tunnel --> WG
     Auth --> Handlers
     API --> Handlers
     Handlers --> Middleware
@@ -45,11 +53,13 @@ graph TB
     Middleware --> DB
 ```
 
-**API Go** : plan de controle — authentification, gestion des utilisateurs, allocation des peers, execution SSH sur les VPS.
+**API Go** : plan de controle -- authentification, gestion des utilisateurs, allocation des peers, execution SSH sur les VPS.
 
-**vpn-core (Rust)** : bibliotheque client partagee — communication avec l'API, parsing des configs WireGuard, orchestration de session.
+**vpn-core (Rust)** : bibliotheque client partagee -- communication avec l'API, parsing des configs WireGuard, orchestration de session.
 
-**WireGuard sur VPS** : plan de donnees — tunneling VPN.
+**vpn-desktop (Rust / egui)** : client desktop Linux -- interface graphique, application des tunnels WireGuard via wg-quick.
+
+**WireGuard sur VPS** : plan de donnees -- tunneling VPN.
 
 ## Schema de la base de donnees
 
@@ -102,6 +112,7 @@ erDiagram
 |-----------|-------------|
 | API Backend | Go 1.24, Gin, GORM, PostgreSQL, golang-jwt, curve25519, SSH |
 | Lib Client | Rust 2021, reqwest, serde, thiserror |
+| Client Desktop | Rust 2021, eframe/egui 0.29, tokio |
 | VPN | WireGuard (kernel Linux sur VPS) |
 | Base de donnees | PostgreSQL 16 (Docker) |
 
@@ -110,28 +121,54 @@ erDiagram
 ```
 FIRE-VPN/
 ├── .github/workflows/
-│   ├── api-go.yml          # CI API Go
-│   └── vpn-core.yml        # CI lib Rust
+│   ├── api-go.yml              # CI API Go
+│   ├── vpn-core.yml            # CI lib Rust
+│   └── vpn-desktop.yml         # CI client desktop (Linux)
 ├── docker/
-│   └── docker-compose.yml  # PostgreSQL 16
+│   └── docker-compose.yml      # PostgreSQL 16
 └── workspace/
-    ├── api-go/             # API backend Go
-    │   ├── main.go         # Point d'entree
-    │   ├── config/         # Chargement variables d'environnement
-    │   ├── models/         # User, VPNServer, Peer
-    │   ├── db/             # Operations CRUD (GORM)
-    │   ├── handlers/       # Handlers HTTP
-    │   ├── middleware/      # Authentification JWT
-    │   ├── services/       # Generation cles WireGuard, SSH
-    │   ├── routes/         # Definition des routes
-    │   └── utils/          # Helpers reponses JSON
+    ├── api-go/                 # API backend Go
+    │   ├── main.go             # Point d'entree
+    │   ├── config/             # Chargement variables d'environnement
+    │   ├── models/             # User, VPNServer, Peer, Request, Services
+    │   ├── db/                 # Operations CRUD (GORM)
+    │   ├── handlers/           # Handlers HTTP (auth, vpn, servers)
+    │   ├── middleware/         # Authentification JWT
+    │   ├── services/           # Generation cles WireGuard, SSH
+    │   ├── routes/             # Definition des routes
+    │   ├── helpers/            # Helpers utilisateur
+    │   └── utils/              # Helpers reponses JSON
     │
-    └── vpn-core/           # Bibliotheque client Rust
+    ├── vpn-core/               # Bibliotheque client Rust
+    │   └── src/
+    │       ├── lib.rs          # Re-exports des modules publics
+    │       ├── api/
+    │       │   ├── mod.rs      # Types (Server, ConnectionInfo, PeerStatus, ApiError)
+    │       │   └── client.rs   # ApiClient HTTP
+    │       ├── auth/
+    │       │   ├── mod.rs      # Types (UserInfo, AuthResponse, AuthError)
+    │       │   └── handlers.rs # register(), login()
+    │       ├── session/
+    │       │   ├── mod.rs      # Types (SessionError) + re-exports
+    │       │   └── manager.rs  # Session (login, connect, switch, disconnect)
+    │       └── wireguard/
+    │           ├── mod.rs      # Re-exports
+    │           └── config.rs   # WireGuardConfig parse/serialise
+    │
+    └── vpn-desktop/            # Client desktop Linux
+        ├── Cargo.toml
         └── src/
-            ├── auth.rs     # register(), login()
-            ├── api.rs      # ApiClient HTTP
-            ├── wireguard.rs# Parsing config WireGuard (INI)
-            └── session.rs  # Orchestration session
+            ├── main.rs         # Point d'entree eframe, detection WSL
+            ├── app.rs          # Etat applicatif, logique metier
+            ├── ui/
+            │   ├── mod.rs      # Re-exports UI
+            │   ├── theme.rs    # Design system (couleurs, boutons, cards)
+            │   ├── login.rs    # Ecran login / inscription
+            │   ├── servers.rs  # Liste des serveurs
+            │   └── connection.rs # Ecran connecte + switch serveur
+            └── vpn/
+                ├── mod.rs
+                └── tunnel.rs   # Application config WireGuard (wg-quick)
 ```
 
 ## Pre-requis
@@ -173,9 +210,25 @@ cargo test
 ```
 
 Le crate produit trois types de sortie :
-- `lib` — usage Rust natif (desktop)
-- `staticlib` — lib statique C (mobile)
-- `cdylib` — lib dynamique C (FFI mobile)
+- `lib` -- usage Rust natif (desktop)
+- `staticlib` -- lib statique C (mobile)
+- `cdylib` -- lib dynamique C (FFI mobile)
+
+### Client desktop
+
+```bash
+cd workspace/vpn-desktop
+cargo build --release
+```
+
+Dependances systeme Linux :
+```bash
+sudo apt-get install -y libgtk-3-dev libxdo-dev libssl-dev \
+    libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+    libxkbcommon-dev libfontconfig1-dev
+```
+
+Le binaire est produit dans `target/release/vpn-desktop`. Sur WSL2, le client force automatiquement le backend X11 et le renderer Glow pour la compatibilite avec WSLg.
 
 ## Configuration
 
@@ -206,7 +259,7 @@ POST /auth/login       {"email", "password"}
 
 ```
 GET  /vpn/servers      Liste des serveurs actifs
-POST /vpn/connect      {"server_id": 1}  →  config WireGuard
+POST /vpn/connect      {"server_id": 1}  ->  config WireGuard
 POST /vpn/disconnect   {"server_id": 1}
 GET  /vpn/status       Connexions actives de l'utilisateur
 ```
@@ -279,7 +332,7 @@ flowchart LR
 
 ## CI/CD
 
-Deux pipelines GitHub Actions, declenchees sur push et pull request vers `main` :
+Trois pipelines GitHub Actions, declenchees sur push et pull request vers `main` :
 
 ```mermaid
 flowchart LR
@@ -294,23 +347,29 @@ flowchart LR
         direction TB
         R1["cargo fmt --check<br/>(formatage)"] --> R2["cargo clippy<br/>(linting)"]
         R2 --> R3["cargo build --lib"]
-        R3 --> R4["cargo test"]
+    end
+
+    subgraph "vpn-desktop CI"
+        direction TB
+        D1["apt-get install<br/>(deps systeme)"] --> D2["cargo fmt --check"]
+        D2 --> D3["cargo clippy"]
+        D3 --> D4["cargo build --release"]
+        D4 --> D5["upload artifact"]
     end
 
     Push["Push / PR"] --> G1
     Push --> R1
+    Push --> D1
 ```
 
-| Pipeline | Declencheur | Services | Etapes |
-|----------|-------------|----------|--------|
-| **API Go** | `workspace/api-go/**` | PostgreSQL 16 (service container) | mod tidy, vet, build, test |
-| **vpn-core** | `workspace/vpn-core/**` | - | fmt, clippy, build, test |
+| Pipeline | Declencheur | Services | Etapes | Artifact |
+|----------|-------------|----------|--------|----------|
+| **API Go** | `workspace/api-go/**` | PostgreSQL 16 (service container) | mod tidy, vet, build, test | - |
+| **vpn-core** | `workspace/vpn-core/**` | - | fmt, clippy, build | libvpn_core.a / .so |
+| **vpn-desktop** | `workspace/vpn-desktop/**` ou `workspace/vpn-core/**` | - | fmt, clippy, build release | vpn-desktop (Linux) |
 
 ## Documentation detaillee
 
-- [API Go](workspace/api-go/README.md) — endpoints, exemples curl, flux detailles
-- [vpn-core](workspace/vpn-core/README.md) — modules Rust, exemples de code, flux desktop/mobile
-
-## Licence
-
-Projet prive.
+- [API Go](workspace/api-go/README.md) -- endpoints, exemples curl, flux detailles
+- [vpn-core](workspace/vpn-core/README.md) -- modules Rust, API publique, exemples de code
+- [vpn-desktop](workspace/vpn-desktop/) -- client desktop Linux (eframe/egui)
