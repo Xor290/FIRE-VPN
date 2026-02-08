@@ -1,4 +1,4 @@
-pub mod wireguard;
+pub mod config;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

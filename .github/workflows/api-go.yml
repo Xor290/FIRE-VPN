@@ -61,7 +61,7 @@ jobs:
 
             - name: Build
               working-directory: workspace/api-go
-              run: go build -o vpn-api ./...
+              run: go build -o vpn-api .
 
             - name: Upload binary
               uses: actions/upload-artifact@v4

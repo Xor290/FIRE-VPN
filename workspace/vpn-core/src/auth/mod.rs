@@ -1,5 +1,5 @@
-pub mod auth;
-pub use auth::*;
+pub mod handlers;
+pub use handlers::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

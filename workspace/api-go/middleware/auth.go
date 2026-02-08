@@ -7,12 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
-	"gorm.io/gorm"
 	"vpn-api/config"
 	"vpn-api/models"
 	"vpn-api/utils"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"gorm.io/gorm"
 )
 
 const (
@@ -22,7 +23,6 @@ const (
 
 type Claims = models.Claims
 
-// signingKey construit la clé de signature unique par user : JWTSecret + SessionSecret.
 func signingKey(globalSecret, sessionSecret string) []byte {
 	return []byte(globalSecret + ":" + sessionSecret)
 }
@@ -60,7 +60,6 @@ func JWTAuth(cfg *config.Config, db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// Premier parse sans vérifier la signature pour extraire le UserID
 		unverified := &Claims{}
 		parser := jwt.NewParser(jwt.WithoutClaimsValidation())
 		_, _, err := parser.ParseUnverified(parts[1], unverified)
@@ -70,7 +69,6 @@ func JWTAuth(cfg *config.Config, db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// Récupérer le SessionSecret de l'user en DB
 		var user models.User
 		if err := db.First(&user, unverified.UserID).Error; err != nil {
 			utils.Error(c, http.StatusUnauthorized, "user not found")
@@ -78,7 +76,6 @@ func JWTAuth(cfg *config.Config, db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// Vérification complète avec la clé composée
 		claims := &Claims{}
 		token, err := jwt.ParseWithClaims(parts[1], claims, func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -121,7 +118,6 @@ func JWTAuth(cfg *config.Config, db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// CompareTokenHash compare deux tokens de manière constant-time pour éviter les timing attacks.
 func CompareTokenHash(a, b []byte) bool {
 	return hmac.Equal(a, b)
 }

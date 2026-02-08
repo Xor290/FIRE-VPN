@@ -1,4 +1,4 @@
-mod api;
+mod client;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

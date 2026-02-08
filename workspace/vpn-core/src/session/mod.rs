@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-pub mod session;
+pub mod manager;
 use crate::api::{ApiClient, ApiError, Server};
 use crate::auth::{AuthError, UserInfo};
 use crate::wireguard::{WireGuardConfig, WireGuardError};
