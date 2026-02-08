@@ -18,3 +18,14 @@ type ConnectRequest struct {
 type DisconnectRequest struct {
 	ServerID uint `json:"server_id" binding:"required"`
 }
+
+type UpdateProfileRequest struct {
+	Username string `json:"username" binding:"required,min=3,max=32"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
+}
+
+type UpdateProfileResponse struct {
+	UserID  uint   `json:"user_id"`
+	Message string `json:"message"`
+}

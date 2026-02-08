@@ -1,10 +1,11 @@
 package handlers
 
 import (
-	"gorm.io/gorm"
 	"vpn-api/config"
 	"vpn-api/models"
 	"vpn-api/services"
+
+	"gorm.io/gorm"
 )
 
 type AuthHandler struct {
@@ -20,6 +21,10 @@ type VPNHandler struct {
 	DB  *gorm.DB
 	Cfg *config.Config
 	SSH *services.SSHClient
+}
+
+type ProfileHandler struct {
+	DB *gorm.DB
 }
 
 type registerRequest = models.RegisterRequest
