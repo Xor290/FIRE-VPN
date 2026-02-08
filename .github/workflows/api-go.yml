@@ -57,7 +57,7 @@ jobs:
 
             - name: Vet
               working-directory: workspace/api-go
-              run: go vet ./...
+              run: go vet .
 
             - name: Build
               working-directory: workspace/api-go

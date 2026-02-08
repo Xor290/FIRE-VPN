@@ -1,28 +1,9 @@
-use thiserror::Error;
+use crate::api::{ApiClient, Server};
+use crate::auth::{self, AuthResponse, UserInfo};
+use crate::wireguard::WireGuardConfig;
 
-use crate::api::{ApiClient, ApiError, Server};
-use crate::auth::{self, AuthError, AuthResponse, UserInfo};
-use crate::wireguard::{WireGuardConfig, WireGuardError};
-
-#[derive(Error, Debug)]
-pub enum SessionError {
-    #[error("auth error: {0}")]
-    Auth(#[from] AuthError),
-    #[error("api error: {0}")]
-    Api(#[from] ApiError),
-    #[error("wireguard error: {0}")]
-    WireGuard(#[from] WireGuardError),
-    #[error("not connected")]
-    NotConnected,
-}
-
-pub struct Session {
-    token: String,
-    user: UserInfo,
-    client: ApiClient,
-    current_server: Option<Server>,
-    config: Option<WireGuardConfig>,
-}
+use super::Session;
+use super::SessionError;
 
 impl Session {
     pub fn login(base_url: &str, email: &str, password: &str) -> Result<Self, SessionError> {

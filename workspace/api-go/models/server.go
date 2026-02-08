@@ -14,7 +14,7 @@ type VPNServer struct {
 	PublicKey  string         `json:"public_key" gorm:"not null"`
 	PrivateKey string         `json:"-" gorm:"not null"`
 	ListenPort int            `json:"listen_port" gorm:"default:51820"`
-	Subnet     string         `json:"subnet" gorm:"not null"` // ex: "10.0.1.0/24"
+	Subnet     string         `json:"subnet" gorm:"not null"`
 	IsActive   bool           `json:"is_active" gorm:"default:true"`
 	CreatedAt  time.Time      `json:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at"`

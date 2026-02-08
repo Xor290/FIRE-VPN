@@ -12,7 +12,7 @@ type Peer struct {
 	ServerID   uint           `json:"server_id" gorm:"not null;index"`
 	PublicKey  string         `json:"public_key" gorm:"not null"`
 	PrivateKey string         `json:"-" gorm:"not null"`
-	AllowedIP  string         `json:"allowed_ip" gorm:"not null"` // IP attribuée au peer dans le subnet
+	AllowedIP  string         `json:"allowed_ip" gorm:"not null"`
 	CreatedAt  time.Time      `json:"created_at"`
 	DeletedAt  gorm.DeletedAt `json:"-" gorm:"index"`
 	User       User           `json:"-" gorm:"foreignKey:UserID"`
