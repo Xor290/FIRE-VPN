@@ -9,7 +9,6 @@ import (
 	"vpn-api/models"
 )
 
-// SSHClient gère les connexions SSH vers les VPS WireGuard.
 type SSHClient struct {
 	KeyPath string
 }

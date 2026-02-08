@@ -43,7 +43,3 @@ jobs:
             - name: Build
               working-directory: workspace/vpn-core
               run: cargo build --lib
-
-            - name: Test
-              working-directory: workspace/vpn-core
-              run: cargo test

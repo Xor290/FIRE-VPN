@@ -18,7 +18,6 @@ type KeyPair struct {
 	PublicKey  string
 }
 
-// GenerateKeyPair génère une paire de clés WireGuard via curve25519.
 func GenerateKeyPair() (*KeyPair, error) {
 	var privateKey [32]byte
 	if _, err := rand.Read(privateKey[:]); err != nil {
@@ -40,7 +39,6 @@ func GenerateKeyPair() (*KeyPair, error) {
 	}, nil
 }
 
-// AllocatePeerIP attribue la prochaine IP disponible dans le subnet du serveur.
 func AllocatePeerIP(gormDB *gorm.DB, server *models.VPNServer) (string, error) {
 	_, ipNet, err := net.ParseCIDR(server.Subnet)
 	if err != nil {
@@ -78,7 +76,6 @@ func inc(ip net.IP) {
 	}
 }
 
-// GenerateClientConfig génère la configuration WireGuard au format INI pour le client.
 func GenerateClientConfig(peerPrivateKey string, peerIP string, server *models.VPNServer) string {
 	return fmt.Sprintf(`[Interface]
 PrivateKey = %s

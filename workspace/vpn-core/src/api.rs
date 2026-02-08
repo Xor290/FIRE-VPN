@@ -9,8 +9,6 @@ pub enum ApiError {
     Api(String),
 }
 
-// --- Modèles alignés avec l'API Go ---
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Server {
     pub id: u64,
@@ -39,7 +37,6 @@ pub struct PeerStatus {
     pub server: Server,
 }
 
-// --- Réponses API ---
 
 #[derive(Deserialize)]
 struct ApiSuccess<T> {
@@ -51,7 +48,6 @@ struct ApiErrorResp {
     error: String,
 }
 
-// --- Client API ---
 
 pub struct ApiClient {
     base_url: String,

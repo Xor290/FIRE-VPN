@@ -73,7 +73,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Régénérer le session secret à chaque login = invalide les anciens tokens
 	if err := user.GenerateSessionSecret(); err != nil {
 		utils.Error(c, http.StatusInternalServerError, "failed to generate session secret")
 		return

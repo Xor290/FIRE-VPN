@@ -34,7 +34,6 @@ func (u *User) CheckPassword(plain string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(plain)) == nil
 }
 
-// GenerateSessionSecret génère un secret de session unique (32 bytes hex).
 func (u *User) GenerateSessionSecret() error {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {

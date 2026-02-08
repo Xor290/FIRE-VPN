@@ -6,7 +6,6 @@ import (
 	"vpn-api/services"
 )
 
-// --- Handler structs ---
 
 type AuthHandler struct {
 	DB  *gorm.DB
@@ -23,7 +22,6 @@ type VPNHandler struct {
 	SSH *services.SSHClient
 }
 
-// --- Request DTOs ---
 
 type registerRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=32"`
