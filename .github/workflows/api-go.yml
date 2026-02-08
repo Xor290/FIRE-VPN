@@ -61,4 +61,11 @@ jobs:
 
             - name: Build
               working-directory: workspace/api-go
-              run: go build ./...
+              run: go build -o vpn-api ./...
+
+            - name: Upload binary
+              uses: actions/upload-artifact@v4
+              with:
+                  name: vpn-api-linux-amd64
+                  path: workspace/api-go/vpn-api
+                  retention-days: 14
