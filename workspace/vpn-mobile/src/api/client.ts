@@ -1,4 +1,10 @@
-import { AuthResponse, ConnectionInfo, PeerStatus, Server } from "../types";
+import {
+    AuthResponse,
+    ConnectionInfo,
+    PeerStatus,
+    Server,
+    UserInfo,
+} from "../types";
 
 class ApiError extends Error {
     constructor(message: string) {
@@ -22,7 +28,6 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
         throw new ApiError(body.error ?? `Erreur ${res.status}`);
     }
 
-    // L'API Go wrappe les reponses dans { "data": ... }
     return (body.data ?? body) as T;
 }
 
@@ -91,6 +96,41 @@ export async function getStatus(
     token: string,
 ): Promise<PeerStatus[]> {
     return request<PeerStatus[]>(`${baseUrl}/vpn/status`, {
+        headers: authHeaders(token),
+    });
+}
+
+export async function getProfileInfo(
+    baseUrl: string,
+    token: string,
+): Promise<UserInfo> {
+    const res = await request<{ user: UserInfo }>(`${baseUrl}/profile/info`, {
+        headers: authHeaders(token),
+    });
+    return res.user;
+}
+
+export async function updateProfile(
+    baseUrl: string,
+    token: string,
+    username: string,
+    email: string,
+    password: string,
+): Promise<UserInfo> {
+    const res = await request<{ user: UserInfo }>(`${baseUrl}/profile/update`, {
+        method: "PUT",
+        headers: authHeaders(token),
+        body: JSON.stringify({ username, email, password }),
+    });
+    return res.user;
+}
+
+export async function deleteProfile(
+    baseUrl: string,
+    token: string,
+): Promise<void> {
+    await request(`${baseUrl}/profile/delete`, {
+        method: "DELETE",
         headers: authHeaders(token),
     });
 }

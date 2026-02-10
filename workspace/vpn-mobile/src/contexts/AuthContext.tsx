@@ -45,7 +45,8 @@ type Action =
           payload: { token: string; email: string; apiUrl: string };
       }
     | { type: "SET_API_URL"; payload: string }
-    | { type: "SET_SAVED_EMAIL"; payload: string };
+    | { type: "SET_SAVED_EMAIL"; payload: string }
+    | { type: "UPDATE_PROFILE"; payload: UserInfo };
 
 function reducer(state: AppState, action: Action): AppState {
     switch (action.type) {
@@ -102,6 +103,14 @@ function reducer(state: AppState, action: Action): AppState {
             return { ...state, apiUrl: action.payload };
         case "SET_SAVED_EMAIL":
             return { ...state, savedEmail: action.payload };
+        case "UPDATE_PROFILE":
+            return {
+                ...state,
+                user: action.payload,
+                savedEmail: action.payload.email,
+                isLoading: false,
+                error: null,
+            };
         default:
             return state;
     }
@@ -133,6 +142,13 @@ interface AuthContextValue extends AppState {
     switchServer: (server: Server) => Promise<void>;
     clearError: () => void;
     setApiUrl: (url: string) => void;
+    refreshProfile: () => Promise<void>;
+    updateProfile: (
+        username: string,
+        email: string,
+        password: string,
+    ) => Promise<void>;
+    deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -302,6 +318,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         [state.apiUrl, state.token, state.connectedServer],
     );
 
+    const handleRefreshProfile = useCallback(async () => {
+        if (!state.token) return;
+        dispatch({ type: "SET_LOADING", payload: true });
+        try {
+            const user = await api.getProfileInfo(state.apiUrl, state.token);
+            dispatch({ type: "UPDATE_PROFILE", payload: user });
+        } catch (e: any) {
+            dispatch({
+                type: "SET_ERROR",
+                payload: e.message ?? "Erreur chargement profil",
+            });
+        }
+    }, [state.apiUrl, state.token]);
+
+    const handleUpdateProfile = useCallback(
+        async (username: string, email: string, password: string) => {
+            if (!state.token) return;
+            dispatch({ type: "SET_LOADING", payload: true });
+            try {
+                const user = await api.updateProfile(
+                    state.apiUrl,
+                    state.token,
+                    username,
+                    email,
+                    password,
+                );
+                dispatch({ type: "UPDATE_PROFILE", payload: user });
+            } catch (e: any) {
+                dispatch({
+                    type: "SET_ERROR",
+                    payload: e.message ?? "Erreur mise a jour profil",
+                });
+            }
+        },
+        [state.apiUrl, state.token],
+    );
+
+    const handleDeleteAccount = useCallback(async () => {
+        if (!state.token) return;
+        dispatch({ type: "SET_LOADING", payload: true });
+        try {
+            await api.deleteProfile(state.apiUrl, state.token);
+            await AsyncStorage.removeItem(STORAGE_KEYS.token);
+            dispatch({ type: "LOGOUT" });
+        } catch (e: any) {
+            dispatch({
+                type: "SET_ERROR",
+                payload: e.message ?? "Erreur suppression du compte",
+            });
+        }
+    }, [state.apiUrl, state.token]);
+
     const clearError = useCallback(() => {
         dispatch({ type: "SET_ERROR", payload: null });
     }, []);
@@ -321,6 +389,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         switchServer: handleSwitchServer,
         clearError,
         setApiUrl,
+        refreshProfile: handleRefreshProfile,
+        updateProfile: handleUpdateProfile,
+        deleteAccount: handleDeleteAccount,
     };
 
     return (

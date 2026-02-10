@@ -1,9 +1,9 @@
 export const Colors = {
     background: "#1a1a1a",
     card: "#161B22",
-    accent: "#58A6FF",
-    accentHover: "#6EB4FF",
-    accentDim: "#1A3A5C",
+    accent: "#4B6BFB",
+    accentHover: "#6C8AFF",
+    accentDim: "#1B2450",
     success: "#3FB950",
     successDim: "#235C2D",
     error: "#F85149",

@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
+    TextInput,
     TouchableOpacity,
     StyleSheet,
     ScrollView,
+    Alert,
+    ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -25,20 +28,100 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 export function ProfileScreen({ navigation }: Props) {
-    const { user, connectedServer, logout, apiUrl } = useAuth();
+    const {
+        user,
+        connectedServer,
+        apiUrl,
+        isLoading,
+        error,
+        logout,
+        refreshProfile,
+        updateProfile,
+        deleteAccount,
+        clearError,
+    } = useAuth();
+
+    const [editing, setEditing] = useState(false);
+    const [username, setUsername] = useState(user?.username ?? "");
+    const [email, setEmail] = useState(user?.email ?? "");
+    const [password, setPassword] = useState("");
+
+    useEffect(() => {
+        refreshProfile();
+    }, [refreshProfile]);
+
+    useEffect(() => {
+        if (user) {
+            setUsername(user.username);
+            setEmail(user.email);
+        }
+    }, [user]);
+
+    const handleSave = async () => {
+        if (!username.trim() || !email.trim() || !password.trim()) {
+            Alert.alert("Erreur", "Tous les champs sont requis.");
+            return;
+        }
+        if (password.length < 8) {
+            Alert.alert(
+                "Erreur",
+                "Le mot de passe doit contenir au moins 8 caracteres.",
+            );
+            return;
+        }
+        clearError();
+        await updateProfile(username.trim(), email.trim(), password);
+        if (!error) {
+            setPassword("");
+            setEditing(false);
+        }
+    };
+
+    const handleDelete = () => {
+        Alert.alert(
+            "Supprimer le compte",
+            "Cette action est irreversible. Toutes vos donnees seront supprimees.",
+            [
+                { text: "Annuler", style: "cancel" },
+                {
+                    text: "Supprimer",
+                    style: "destructive",
+                    onPress: deleteAccount,
+                },
+            ],
+        );
+    };
+
+    const handleLogout = () => {
+        Alert.alert("Deconnexion", "Voulez-vous vous deconnecter ?", [
+            { text: "Annuler", style: "cancel" },
+            { text: "Deconnecter", style: "destructive", onPress: logout },
+        ]);
+    };
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Accent bar */}
             <View style={styles.accentBar} />
 
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Text style={styles.backText}>Retour</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Profil</Text>
-                <View style={styles.headerSpacer} />
+                <TouchableOpacity
+                    onPress={() => {
+                        if (editing) {
+                            setUsername(user?.username ?? "");
+                            setEmail(user?.email ?? "");
+                            setPassword("");
+                        }
+                        setEditing(!editing);
+                    }}
+                >
+                    <Text style={styles.backText}>
+                        {editing ? "Annuler" : "Modifier"}
+                    </Text>
+                </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -53,37 +136,121 @@ export function ProfileScreen({ navigation }: Props) {
                     <Text style={styles.email}>{user?.email ?? "-"}</Text>
                 </View>
 
-                {/* Account info */}
-                <Text style={styles.sectionHeading}>
-                    INFORMATIONS DU COMPTE
-                </Text>
-                <View style={styles.card}>
-                    <InfoRow
-                        label="Identifiant"
-                        value={`#${user?.id ?? "-"}`}
-                    />
-                    <InfoRow
-                        label="Nom d'utilisateur"
-                        value={user?.username ?? "-"}
-                    />
-                    <InfoRow label="Email" value={user?.email ?? "-"} />
-                </View>
+                {error && (
+                    <View style={styles.errorBox}>
+                        <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                )}
 
-                {/* Connection info */}
-                <Text style={styles.sectionHeading}>CONNEXION VPN</Text>
-                <View style={styles.card}>
-                    <InfoRow
-                        label="Statut"
-                        value={connectedServer ? "Connecte" : "Deconnecte"}
-                    />
-                    {connectedServer && (
-                        <InfoRow
-                            label="Serveur actif"
-                            value={connectedServer.name}
-                        />
-                    )}
-                    <InfoRow label="Serveur API" value={apiUrl} />
-                </View>
+                {editing ? (
+                    <>
+                        <Text style={styles.sectionHeading}>
+                            MODIFIER LE PROFIL
+                        </Text>
+                        <View style={styles.card}>
+                            <Text style={styles.fieldLabel}>
+                                Nom d'utilisateur
+                            </Text>
+                            <TextInput
+                                style={styles.input}
+                                value={username}
+                                onChangeText={setUsername}
+                                placeholder="Nom d'utilisateur"
+                                placeholderTextColor={Colors.textMuted}
+                                autoCapitalize="none"
+                            />
+                            <Text style={styles.fieldLabel}>Email</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={email}
+                                onChangeText={setEmail}
+                                placeholder="Email"
+                                placeholderTextColor={Colors.textMuted}
+                                autoCapitalize="none"
+                                keyboardType="email-address"
+                            />
+                            <Text style={styles.fieldLabel}>
+                                Nouveau mot de passe
+                            </Text>
+                            <TextInput
+                                style={styles.input}
+                                value={password}
+                                onChangeText={setPassword}
+                                placeholder="Mot de passe (min. 8 car.)"
+                                placeholderTextColor={Colors.textMuted}
+                                secureTextEntry
+                            />
+                            <TouchableOpacity
+                                style={styles.saveButton}
+                                onPress={handleSave}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <ActivityIndicator
+                                        color={Colors.background}
+                                    />
+                                ) : (
+                                    <Text style={styles.saveButtonText}>
+                                        Enregistrer
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                ) : (
+                    <>
+                        {/* Account info */}
+                        <Text style={styles.sectionHeading}>
+                            INFORMATIONS DU COMPTE
+                        </Text>
+                        <View style={styles.card}>
+                            <InfoRow
+                                label="Identifiant"
+                                value={`#${user?.id ?? "-"}`}
+                            />
+                            <InfoRow
+                                label="Nom d'utilisateur"
+                                value={user?.username ?? "-"}
+                            />
+                            <InfoRow label="Email" value={user?.email ?? "-"} />
+                        </View>
+
+                        {/* Connection info */}
+                        <Text style={styles.sectionHeading}>CONNEXION VPN</Text>
+                        <View style={styles.card}>
+                            <InfoRow
+                                label="Statut"
+                                value={
+                                    connectedServer ? "Connecte" : "Deconnecte"
+                                }
+                            />
+                            {connectedServer && (
+                                <InfoRow
+                                    label="Serveur actif"
+                                    value={connectedServer.name}
+                                />
+                            )}
+                            <InfoRow label="Serveur API" value={apiUrl} />
+                        </View>
+                    </>
+                )}
+
+                {/* Actions */}
+                <TouchableOpacity
+                    style={styles.logoutButton}
+                    onPress={handleLogout}
+                >
+                    <Text style={styles.logoutButtonText}>Se deconnecter</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={handleDelete}
+                >
+                    <Text style={styles.deleteButtonText}>
+                        Supprimer le compte
+                    </Text>
+                </TouchableOpacity>
             </ScrollView>
         </SafeAreaView>
     );
@@ -114,11 +281,9 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: "600",
     },
-    headerSpacer: {
-        width: 50,
-    },
     scrollContent: {
         padding: Spacing.xl,
+        paddingBottom: Spacing.xxxl,
     },
     avatarSection: {
         alignItems: "center",
@@ -180,9 +345,51 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: "500",
     },
-    logoutButton: {
-        backgroundColor: Colors.danger,
+    errorBox: {
+        backgroundColor: Colors.danger + "20",
+        borderRadius: BorderRadius.sm,
+        padding: Spacing.md,
+        marginBottom: Spacing.md,
+    },
+    errorText: {
+        color: Colors.error,
+        fontSize: 13,
+        textAlign: "center",
+    },
+    fieldLabel: {
+        color: Colors.textSecondary,
+        fontSize: 12,
+        marginBottom: Spacing.xs,
+        marginTop: Spacing.md,
+    },
+    input: {
+        backgroundColor: Colors.background,
+        borderRadius: BorderRadius.sm,
+        borderWidth: 1,
+        borderColor: Colors.border,
+        color: Colors.textPrimary,
+        fontSize: 14,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+    },
+    saveButton: {
+        backgroundColor: Colors.accent,
         borderRadius: BorderRadius.md,
+        height: 44,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: Spacing.xl,
+    },
+    saveButtonText: {
+        color: Colors.background,
+        fontSize: 15,
+        fontWeight: "600",
+    },
+    logoutButton: {
+        backgroundColor: Colors.card,
+        borderRadius: BorderRadius.md,
+        borderWidth: 1,
+        borderColor: Colors.border,
         height: 44,
         justifyContent: "center",
         alignItems: "center",
@@ -192,5 +399,17 @@ const styles = StyleSheet.create({
         color: Colors.textPrimary,
         fontSize: 15,
         fontWeight: "600",
+    },
+    deleteButton: {
+        borderRadius: BorderRadius.md,
+        height: 44,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: Spacing.md,
+    },
+    deleteButtonText: {
+        color: Colors.danger,
+        fontSize: 14,
+        fontWeight: "500",
     },
 });
