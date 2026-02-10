@@ -56,6 +56,10 @@ jobs:
               working-directory: workspace/vpn-mobile
               run: npm ci
 
+            - name: Configure EAS project
+              working-directory: workspace/vpn-mobile
+              run: eas init --id ${{ secrets.EXPO_PROJECT_ID }} --non-interactive
+
             - name: Build APK
               working-directory: workspace/vpn-mobile
               run: eas build --platform android --profile preview --non-interactive
