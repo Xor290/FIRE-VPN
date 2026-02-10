@@ -1,0 +1,74 @@
+name: vpn-mobile CI
+
+on:
+    push:
+        branches: [main]
+        paths:
+            - "workspace/vpn-mobile/**"
+    pull_request:
+        branches: [main]
+        paths:
+            - "workspace/vpn-mobile/**"
+
+jobs:
+    typecheck:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
+                  cache-dependency-path: workspace/vpn-mobile/package-lock.json
+
+            - name: Install dependencies
+              working-directory: workspace/vpn-mobile
+              run: npm ci
+
+            - name: Typecheck
+              working-directory: workspace/vpn-mobile
+              run: npx tsc --noEmit
+
+    build-apk:
+        needs: typecheck
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
+                  cache-dependency-path: workspace/vpn-mobile/package-lock.json
+
+            - name: Setup Expo & EAS CLI
+              uses: expo/expo-github-action@v8
+              with:
+                  eas-version: latest
+                  token: ${{ secrets.EXPO_TOKEN }}
+
+            - name: Install dependencies
+              working-directory: workspace/vpn-mobile
+              run: npm ci
+
+            - name: Build APK
+              working-directory: workspace/vpn-mobile
+              run: eas build --platform android --profile preview --non-interactive
+
+            - name: Download APK
+              working-directory: workspace/vpn-mobile
+              run: |
+                  APK_URL=$(eas build:list --platform android --status finished --limit 1 --json --non-interactive | jq -r '.[0].artifacts.buildUrl')
+                  curl -L -o fire-vpn.apk "$APK_URL"
+
+            - name: Upload APK artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: fire-vpn-android-apk
+                  path: workspace/vpn-mobile/fire-vpn.apk
+                  retention-days: 14
