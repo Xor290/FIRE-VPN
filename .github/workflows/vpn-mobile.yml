@@ -56,9 +56,11 @@ jobs:
               working-directory: workspace/vpn-mobile
               run: npm ci
 
-            - name: Configure EAS project
+            - name: Inject EAS project ID
               working-directory: workspace/vpn-mobile
-              run: eas init --id ${{ secrets.EXPO_PROJECT_ID }} --non-interactive
+              run: |
+                  jq '.expo.extra.eas.projectId = "${{ secrets.EXPO_PROJECT_ID }}"' app.json > app.tmp.json
+                  mv app.tmp.json app.json
 
             - name: Build APK
               working-directory: workspace/vpn-mobile
