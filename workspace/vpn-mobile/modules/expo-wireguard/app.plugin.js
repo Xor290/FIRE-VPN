@@ -15,12 +15,21 @@ function enableCoreLibraryDesugaring(config) {
             );
         }
 
-        // Enable coreLibraryDesugaringEnabled in compileOptions if not present
+        // Enable coreLibraryDesugaringEnabled in compileOptions
         if (!buildGradle.includes("coreLibraryDesugaringEnabled")) {
-            buildGradle = buildGradle.replace(
-                /compileOptions\s*\{/,
-                `compileOptions {\n        coreLibraryDesugaringEnabled true`,
-            );
+            if (buildGradle.match(/compileOptions\s*\{/)) {
+                // compileOptions block exists, inject into it
+                buildGradle = buildGradle.replace(
+                    /compileOptions\s*\{/,
+                    `compileOptions {\n        coreLibraryDesugaringEnabled true`,
+                );
+            } else {
+                // No compileOptions block, add one inside the android block
+                buildGradle = buildGradle.replace(
+                    /android\s*\{/,
+                    `android {\n    compileOptions {\n        coreLibraryDesugaringEnabled true\n    }`,
+                );
+            }
         }
 
         config.modResults.contents = buildGradle;
