@@ -22,6 +22,7 @@
                 "backgroundColor": "#0D1117"
             }
         },
+        "plugins": ["./modules/expo-wireguard/app.plugin.js"],
         "web": {
             "favicon": "./assets/favicon.png"
         }

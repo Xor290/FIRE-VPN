@@ -1,0 +1,8 @@
+---
+- name: Deploy WireGuard VPN server
+  hosts: vm-vpn
+  become: true
+  gather_facts: true
+
+  roles:
+      - wireguard

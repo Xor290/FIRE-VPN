@@ -8,6 +8,8 @@ import React, {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserInfo, Server, ConnectionInfo } from "../types";
 import * as api from "../api/client";
+import ExpoWireguard from "../../modules/expo-wireguard";
+import type { TunnelStatus } from "../../modules/expo-wireguard";
 
 const STORAGE_KEYS = {
     token: "@fire_vpn_token",
@@ -27,6 +29,7 @@ interface AppState {
     isLoading: boolean;
     error: string | null;
     savedEmail: string;
+    tunnelStatus: TunnelStatus;
 }
 
 type Action =
@@ -46,7 +49,8 @@ type Action =
       }
     | { type: "SET_API_URL"; payload: string }
     | { type: "SET_SAVED_EMAIL"; payload: string }
-    | { type: "UPDATE_PROFILE"; payload: UserInfo };
+    | { type: "UPDATE_PROFILE"; payload: UserInfo }
+    | { type: "SET_TUNNEL_STATUS"; payload: TunnelStatus };
 
 function reducer(state: AppState, action: Action): AppState {
     switch (action.type) {
@@ -111,6 +115,8 @@ function reducer(state: AppState, action: Action): AppState {
                 isLoading: false,
                 error: null,
             };
+        case "SET_TUNNEL_STATUS":
+            return { ...state, tunnelStatus: action.payload };
         default:
             return state;
     }
@@ -126,6 +132,7 @@ const initialState: AppState = {
     isLoading: false,
     error: null,
     savedEmail: "",
+    tunnelStatus: "DOWN",
 };
 
 interface AuthContextValue extends AppState {
@@ -176,6 +183,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })();
     }, []);
 
+    // Listen to native tunnel status changes
+    useEffect(() => {
+        const subscription = ExpoWireguard.addListener(
+            "onStatusChange",
+            (event: { status: TunnelStatus }) => {
+                dispatch({ type: "SET_TUNNEL_STATUS", payload: event.status });
+            },
+        );
+        return () => subscription.remove();
+    }, []);
+
     const handleLogin = useCallback(
         async (email: string, password: string) => {
             dispatch({ type: "SET_LOADING", payload: true });
@@ -222,6 +240,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const handleLogout = useCallback(async () => {
         if (state.connectedServer && state.token) {
             try {
+                await ExpoWireguard.disconnect();
                 await api.disconnectFromServer(
                     state.apiUrl,
                     state.token,
@@ -257,6 +276,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     state.token,
                     server.id,
                 );
+                // Activate the WireGuard tunnel with the config from the API
+                await ExpoWireguard.connect(info.config);
                 dispatch({
                     type: "CONNECT_SUCCESS",
                     payload: { server, info },
@@ -275,6 +296,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!state.token || !state.connectedServer) return;
         dispatch({ type: "SET_LOADING", payload: true });
         try {
+            // Shut down the WireGuard tunnel first
+            await ExpoWireguard.disconnect();
             await api.disconnectFromServer(
                 state.apiUrl,
                 state.token,
@@ -294,6 +317,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (!state.token || !state.connectedServer) return;
             dispatch({ type: "SET_LOADING", payload: true });
             try {
+                // Shut down current tunnel
+                await ExpoWireguard.disconnect();
                 await api.disconnectFromServer(
                     state.apiUrl,
                     state.token,
@@ -304,6 +329,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     state.token,
                     server.id,
                 );
+                // Activate new tunnel
+                await ExpoWireguard.connect(info.config);
                 dispatch({
                     type: "CONNECT_SUCCESS",
                     payload: { server, info },

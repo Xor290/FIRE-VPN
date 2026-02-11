@@ -1,0 +1,24 @@
+---
+# WireGuard server configuration
+wg_interface: wg0
+wg_port: 51820
+wg_subnet: "10.10.0.0/24"
+wg_server_address: "10.10.0.1/24"
+wg_dns: "1.1.1.1, 8.8.8.8"
+
+# Network
+wg_persistent_keepalive: 25
+wg_allowed_ips: "0.0.0.0/0"
+
+# Post up/down rules (NAT masquerade)
+# Auto-detected from ansible_default_ipv4.interface if not set
+# wg_nat_interface: eth0
+
+# Firewall
+wg_manage_firewall: true
+
+# Kernel forwarding
+wg_enable_ipv4_forwarding: true
+
+# SSH access for FIRE-VPN API
+wg_api_ssh_pubkey: ""

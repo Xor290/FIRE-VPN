@@ -1,0 +1,25 @@
+---
+- name: Install WireGuard (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name:
+      - wireguard
+      - wireguard-tools
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+- name: Install WireGuard (RHEL/CentOS/Fedora)
+  block:
+    - name: Install EPEL repository (RHEL/CentOS)
+      ansible.builtin.dnf:
+        name: epel-release
+        state: present
+      when: ansible_distribution != "Fedora"
+
+    - name: Install WireGuard packages
+      ansible.builtin.dnf:
+        name:
+          - wireguard-tools
+        state: present
+  when: ansible_os_family == "RedHat"

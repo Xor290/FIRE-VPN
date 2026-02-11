@@ -27,7 +27,10 @@ export function ConnectedScreen() {
         logout,
         clearError,
         user,
+        tunnelStatus,
     } = useAuth();
+
+    const isTunnelUp = tunnelStatus === "UP";
 
     // Pulsing animation
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -97,18 +100,38 @@ export function ConnectedScreen() {
                 {/* Connection status hero */}
                 <View style={styles.heroSection}>
                     <View style={styles.pulseContainer}>
-                        <Animated.View
+                        {isTunnelUp && (
+                            <Animated.View
+                                style={[
+                                    styles.pulseRing,
+                                    {
+                                        transform: [{ scale: pulseAnim }],
+                                        opacity: pulseOpacity,
+                                    },
+                                ]}
+                            />
+                        )}
+                        <View
                             style={[
-                                styles.pulseRing,
-                                {
-                                    transform: [{ scale: pulseAnim }],
-                                    opacity: pulseOpacity,
+                                styles.pulseDot,
+                                !isTunnelUp && {
+                                    backgroundColor: Colors.textMuted,
                                 },
                             ]}
                         />
-                        <View style={styles.pulseDot} />
                     </View>
-                    <Text style={styles.connectedText}>CONNECTE</Text>
+                    <Text
+                        style={[
+                            styles.connectedText,
+                            {
+                                color: isTunnelUp
+                                    ? Colors.success
+                                    : Colors.textMuted,
+                            },
+                        ]}
+                    >
+                        {isTunnelUp ? "CONNECTE" : "TUNNEL INACTIF"}
+                    </Text>
                     {connectedServer && (
                         <Text style={styles.serverInfo}>
                             {getCountryFlag(connectedServer.country)}{" "}
@@ -280,7 +303,6 @@ const styles = StyleSheet.create({
     connectedText: {
         fontSize: 20,
         fontWeight: "700",
-        color: Colors.success,
         letterSpacing: 2,
         marginBottom: Spacing.xs,
     },

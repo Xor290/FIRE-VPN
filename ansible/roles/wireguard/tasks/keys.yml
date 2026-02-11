@@ -1,0 +1,43 @@
+---
+- name: Create /etc/wireguard
+  ansible.builtin.file:
+    path: /etc/wireguard
+    state: directory
+    mode: "0700"
+
+- name: Check if private key exists
+  ansible.builtin.stat:
+    path: /etc/wireguard/{{ wg_interface }}_private.key
+  register: _wg_privkey_file
+
+- name: Generate private key
+  ansible.builtin.shell: wg genkey
+  register: _wg_genkey
+  changed_when: true
+  when: not _wg_privkey_file.stat.exists
+
+- name: Save private key
+  ansible.builtin.copy:
+    content: "{{ _wg_genkey.stdout }}"
+    dest: /etc/wireguard/{{ wg_interface }}_private.key
+    mode: "0600"
+  when: not _wg_privkey_file.stat.exists
+
+- name: Read private key
+  ansible.builtin.slurp:
+    src: /etc/wireguard/{{ wg_interface }}_private.key
+  register: _wg_privkey_b64
+
+- name: Derive public key
+  ansible.builtin.shell: echo "{{ (_wg_privkey_b64.content | b64decode | trim) }}" | wg pubkey
+  register: _wg_pubkey
+  changed_when: false
+
+- name: Set key facts
+  ansible.builtin.set_fact:
+    wg_private_key: "{{ _wg_privkey_b64.content | b64decode | trim }}"
+    wg_public_key: "{{ _wg_pubkey.stdout | trim }}"
+
+- name: Show server public key
+  ansible.builtin.debug:
+    msg: "Server public key: {{ wg_public_key }}"

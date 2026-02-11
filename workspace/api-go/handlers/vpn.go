@@ -1,13 +1,15 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"vpn-api/db"
 	"vpn-api/models"
 	"vpn-api/services"
 	"vpn-api/utils"
+
+	"github.com/gin-gonic/gin"
 )
 
 func (h *VPNHandler) Connect(c *gin.Context) {
@@ -36,17 +38,21 @@ func (h *VPNHandler) Connect(c *gin.Context) {
 
 	keyPair, err := services.GenerateKeyPair()
 	if err != nil {
+		log.Printf("[CONNECT] failed to generate keys: %v", err)
 		utils.Error(c, http.StatusInternalServerError, "failed to generate keys")
 		return
 	}
 
 	peerIP, err := services.AllocatePeerIP(h.DB, server)
 	if err != nil {
+		log.Printf("[CONNECT] failed to allocate IP: %v", err)
 		utils.Error(c, http.StatusInternalServerError, "failed to allocate IP")
 		return
 	}
 
+	log.Printf("[CONNECT] adding peer on %s (key=%s, ip=%s)", server.IP, keyPair.PublicKey, peerIP)
 	if err := h.SSH.AddPeer(server, keyPair.PublicKey, peerIP); err != nil {
+		log.Printf("[CONNECT] SSH error: %v", err)
 		utils.Error(c, http.StatusInternalServerError, "failed to add peer on VPS")
 		return
 	}

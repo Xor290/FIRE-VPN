@@ -1,0 +1,26 @@
+---
+- name: Install WireGuard
+  ansible.builtin.include_tasks: install.yml
+
+- name: Generate server keys
+  ansible.builtin.include_tasks: keys.yml
+
+- name: Deploy WireGuard config
+  ansible.builtin.template:
+      src: wg.conf.j2
+      dest: /etc/wireguard/{{ wg_interface }}.conf
+      mode: "0600"
+  notify: Restart WireGuard
+
+- name: Enable IPv4 forwarding
+  ansible.posix.sysctl:
+      name: net.ipv4.ip_forward
+      value: "1"
+      sysctl_set: true
+      reload: true
+
+- name: Enable and start WireGuard
+  ansible.builtin.systemd:
+      name: wg-quick@{{ wg_interface }}
+      state: started
+      enabled: true
