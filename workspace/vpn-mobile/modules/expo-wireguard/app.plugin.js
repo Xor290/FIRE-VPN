@@ -1,4 +1,32 @@
-const { withAndroidManifest } = require("@expo/config-plugins");
+const {
+    withAndroidManifest,
+    withAppBuildGradle,
+} = require("@expo/config-plugins");
+
+function enableCoreLibraryDesugaring(config) {
+    return withAppBuildGradle(config, (config) => {
+        let buildGradle = config.modResults.contents;
+
+        // Add coreLibraryDesugaring dependency if not present
+        if (!buildGradle.includes("coreLibraryDesugaring")) {
+            buildGradle = buildGradle.replace(
+                /dependencies\s*\{/,
+                `dependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'`,
+            );
+        }
+
+        // Enable coreLibraryDesugaringEnabled in compileOptions if not present
+        if (!buildGradle.includes("coreLibraryDesugaringEnabled")) {
+            buildGradle = buildGradle.replace(
+                /compileOptions\s*\{/,
+                `compileOptions {\n        coreLibraryDesugaringEnabled true`,
+            );
+        }
+
+        config.modResults.contents = buildGradle;
+        return config;
+    });
+}
 
 function addVpnService(config) {
     return withAndroidManifest(config, async (config) => {
@@ -22,8 +50,7 @@ function addVpnService(config) {
                 $: {
                     "android:name":
                         "com.wireguard.android.backend.GoBackend$VpnService",
-                    "android:permission":
-                        "android.permission.BIND_VPN_SERVICE",
+                    "android:permission": "android.permission.BIND_VPN_SERVICE",
                     "android:exported": "false",
                 },
                 "intent-filter": [
@@ -31,8 +58,7 @@ function addVpnService(config) {
                         action: [
                             {
                                 $: {
-                                    "android:name":
-                                        "android.net.VpnService",
+                                    "android:name": "android.net.VpnService",
                                 },
                             },
                         ],
@@ -45,4 +71,8 @@ function addVpnService(config) {
     });
 }
 
-module.exports = addVpnService;
+module.exports = (config) => {
+    config = enableCoreLibraryDesugaring(config);
+    config = addVpnService(config);
+    return config;
+};
