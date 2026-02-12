@@ -37,6 +37,18 @@ function enableCoreLibraryDesugaring(config) {
     });
 }
 
+function enableCleartextTraffic(config) {
+    return withAndroidManifest(config, async (config) => {
+        const manifest = config.modResults;
+        const app = manifest.manifest.application?.[0];
+        if (!app) return config;
+
+        app.$["android:usesCleartextTraffic"] = "true";
+
+        return config;
+    });
+}
+
 function addVpnService(config) {
     return withAndroidManifest(config, async (config) => {
         const manifest = config.modResults;
@@ -82,6 +94,7 @@ function addVpnService(config) {
 
 module.exports = (config) => {
     config = enableCoreLibraryDesugaring(config);
+    config = enableCleartextTraffic(config);
     config = addVpnService(config);
     return config;
 };
