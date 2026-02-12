@@ -7,6 +7,8 @@ import {
     StyleSheet,
     ActivityIndicator,
     RefreshControl,
+    ImageBackground,
+    Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -26,6 +28,8 @@ export function ServerListScreen({ navigation }: Props) {
         error,
         loadServers,
         connectToServer,
+        disconnectFromServer,
+        connectedServer,
         logout,
         clearError,
         user,
@@ -33,6 +37,8 @@ export function ServerListScreen({ navigation }: Props) {
 
     const [selectedServer, setSelectedServer] = useState<Server | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
+
+    const isConnected = !!connectedServer;
 
     useEffect(() => {
         loadServers();
@@ -45,142 +51,184 @@ export function ServerListScreen({ navigation }: Props) {
         setIsConnecting(false);
     };
 
+    const handleDisconnect = async () => {
+        if (isConnecting) return;
+        setIsConnecting(true);
+        await disconnectFromServer();
+        setIsConnecting(false);
+    };
+
     const canConnect =
         selectedServer && selectedServer.is_active && !isConnecting;
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Accent bar */}
-            <View style={styles.accentBar} />
+        <ImageBackground
+            source={require("../../assets/bg-ghost.png")}
+            style={styles.backgroundImage}
+            imageStyle={{
+                opacity: 0.15,
+                resizeMode: "cover",
+                height: "90%",
+                width: "105%",
+            }}
+        >
+            <SafeAreaView style={styles.container}>
+                {/* Accent bar */}
+                <View style={styles.accentBar} />
 
-            {/* Header */}
-            <View style={styles.header}>
-                <View>
-                    <Text style={styles.title}>FIRE VPN</Text>
-                    {user && <Text style={styles.userEmail}>{user.email}</Text>}
-                </View>
-
-                <View style={styles.headerActions}>
-                    {/* Bouton Profil */}
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate("Profile")}
-                        style={styles.profileButton}
-                    >
-                        <Text style={styles.profileText}>Profil</Text>
-                    </TouchableOpacity>
-
-                    {/* Bouton Déconnexion */}
-                    <TouchableOpacity onPress={logout}>
-                        <Text style={styles.logoutText}>Deconnexion</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* Error */}
-            {error && (
-                <View style={styles.errorBox}>
-                    <Text style={styles.errorText}>{error}</Text>
-                    <TouchableOpacity onPress={clearError}>
-                        <Text style={styles.errorClose}>X</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
-
-            {/* Section heading */}
-            <Text style={styles.sectionHeading}>SERVEURS DISPONIBLES</Text>
-
-            {/* Server list */}
-            <FlatList
-                data={servers}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => (
-                    <ServerCard
-                        server={item}
-                        selected={selectedServer?.id === item.id}
-                        onPress={() => setSelectedServer(item)}
-                    />
-                )}
-                contentContainerStyle={[
-                    styles.list,
-                    servers.length === 0 && styles.listEmpty,
-                ]}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={isLoading}
-                        onRefresh={loadServers}
-                        tintColor={Colors.accent}
-                        colors={[Colors.accent]}
-                    />
-                }
-                ListEmptyComponent={
-                    <View style={styles.centered}>
-                        {isLoading ? (
-                            <>
-                                <ActivityIndicator
-                                    size="large"
-                                    color={Colors.accent}
-                                />
-                                <Text style={styles.loadingText}>
-                                    Chargement des serveurs...
-                                </Text>
-                            </>
-                        ) : (
-                            <>
-                                <Text style={styles.emptyText}>
-                                    Aucun serveur disponible
-                                </Text>
-                                <Text style={styles.emptySubtext}>
-                                    Tirez vers le bas pour actualiser
-                                </Text>
-                                <TouchableOpacity
-                                    style={styles.retryButton}
-                                    onPress={loadServers}
-                                >
-                                    <Text style={styles.retryText}>
-                                        Reessayer
-                                    </Text>
-                                </TouchableOpacity>
-                            </>
+                {/* Header */}
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <Image
+                            source={require("../../assets/logo-ghost.png")}
+                            style={styles.headerLogo}
+                        />
+                        {user && (
+                            <Text style={styles.userEmail}>{user.email}</Text>
                         )}
                     </View>
-                }
-            />
 
-            {/* Connect button */}
-            <View style={styles.footer}>
-                <TouchableOpacity
-                    style={[
-                        styles.connectButton,
-                        !canConnect && styles.connectButtonDisabled,
-                    ]}
-                    onPress={handleConnect}
-                    disabled={!canConnect}
-                    activeOpacity={0.8}
-                >
-                    {isConnecting ? (
-                        <ActivityIndicator color={Colors.textPrimary} />
-                    ) : (
-                        <Text
-                            style={[
-                                styles.connectButtonText,
-                                !canConnect && styles.connectButtonTextDisabled,
-                            ]}
+                    <View style={styles.headerActions}>
+                        {/* Bouton Profil */}
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate("Profile")}
+                            style={styles.profileButton}
                         >
-                            {isConnecting
-                                ? "Connexion en cours..."
-                                : "Se connecter"}
-                        </Text>
+                            <Text style={styles.profileText}>Profil</Text>
+                        </TouchableOpacity>
+
+                        {/* Bouton Déconnexion */}
+                        <TouchableOpacity onPress={logout}>
+                            <Text style={styles.logoutText}>Deconnexion</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* Error */}
+                {error && (
+                    <View style={styles.errorBox}>
+                        <Text style={styles.errorText}>{error}</Text>
+                        <TouchableOpacity onPress={clearError}>
+                            <Text style={styles.errorClose}>X</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Section heading */}
+                <Text style={styles.sectionHeading}>SERVEURS DISPONIBLES</Text>
+
+                {/* Server list */}
+                <FlatList
+                    data={servers}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={({ item }) => (
+                        <ServerCard
+                            server={item}
+                            selected={selectedServer?.id === item.id}
+                            onPress={() => setSelectedServer(item)}
+                        />
                     )}
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+                    contentContainerStyle={[
+                        styles.list,
+                        servers.length === 0 && styles.listEmpty,
+                    ]}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={isLoading}
+                            onRefresh={loadServers}
+                            tintColor={Colors.accent}
+                            colors={[Colors.accent]}
+                        />
+                    }
+                    ListEmptyComponent={
+                        <View style={styles.centered}>
+                            {isLoading ? (
+                                <>
+                                    <ActivityIndicator
+                                        size="large"
+                                        color={Colors.accent}
+                                    />
+                                    <Text style={styles.loadingText}>
+                                        Chargement des serveurs...
+                                    </Text>
+                                </>
+                            ) : (
+                                <>
+                                    <Text style={styles.emptyText}>
+                                        Aucun serveur disponible
+                                    </Text>
+                                    <Text style={styles.emptySubtext}>
+                                        Tirez vers le bas pour actualiser
+                                    </Text>
+                                    <TouchableOpacity
+                                        style={styles.retryButton}
+                                        onPress={loadServers}
+                                    >
+                                        <Text style={styles.retryText}>
+                                            Reessayer
+                                        </Text>
+                                    </TouchableOpacity>
+                                </>
+                            )}
+                        </View>
+                    }
+                />
+
+                {/* Connect / Disconnect button */}
+                <View style={styles.footer}>
+                    {isConnected ? (
+                        <TouchableOpacity
+                            style={styles.disconnectButton}
+                            onPress={handleDisconnect}
+                            disabled={isConnecting}
+                            activeOpacity={0.8}
+                        >
+                            {isConnecting ? (
+                                <ActivityIndicator color={Colors.textPrimary} />
+                            ) : (
+                                <Text style={styles.disconnectButtonText}>
+                                    Se deconnecter
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            style={[
+                                styles.connectButton,
+                                !canConnect && styles.connectButtonDisabled,
+                            ]}
+                            onPress={handleConnect}
+                            disabled={!canConnect}
+                            activeOpacity={0.8}
+                        >
+                            {isConnecting ? (
+                                <ActivityIndicator color={Colors.textPrimary} />
+                            ) : (
+                                <Text
+                                    style={[
+                                        styles.connectButtonText,
+                                        !canConnect &&
+                                            styles.connectButtonTextDisabled,
+                                    ]}
+                                >
+                                    Se connecter
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </SafeAreaView>
+        </ImageBackground>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
+    backgroundImage: {
         flex: 1,
         backgroundColor: Colors.background,
+    },
+    container: {
+        flex: 1,
     },
     accentBar: {
         height: 3,
@@ -211,16 +259,18 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: "500",
     },
-    title: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: Colors.accent,
-        letterSpacing: 2,
+    headerLeft: {
+        alignItems: "flex-start",
+    },
+    headerLogo: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
     },
     userEmail: {
         color: Colors.textMuted,
-        fontSize: 12,
-        marginTop: 2,
+        fontSize: 11,
+        marginTop: Spacing.xs,
     },
     logoutText: {
         color: Colors.textMuted,
@@ -321,5 +371,17 @@ const styles = StyleSheet.create({
     },
     connectButtonTextDisabled: {
         color: Colors.textMuted,
+    },
+    disconnectButton: {
+        backgroundColor: Colors.danger,
+        borderRadius: BorderRadius.md,
+        height: 44,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    disconnectButtonText: {
+        color: Colors.textPrimary,
+        fontSize: 15,
+        fontWeight: "600",
     },
 });

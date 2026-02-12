@@ -1,6 +1,6 @@
 export const Colors = {
-    background: "#1a1a1a",
-    card: "#161B22",
+    background: "#000000",
+    card: "#1a1a1a",
     accent: "#4B6BFB",
     accentHover: "#6C8AFF",
     accentDim: "#1B2450",
@@ -54,5 +54,14 @@ export const COUNTRY_FLAGS: Record<string, string> = {
 };
 
 export function getCountryFlag(country: string): string {
-    return COUNTRY_FLAGS[country.toLowerCase()] ?? "\u{1F310}";
+    const key = country.toLowerCase();
+    if (COUNTRY_FLAGS[key]) return COUNTRY_FLAGS[key];
+    // Convert ISO 2-letter code (FR, DE, US...) to flag emoji
+    if (country.length === 2) {
+        const code = country.toUpperCase();
+        return String.fromCodePoint(
+            ...[...code].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65),
+        );
+    }
+    return "\u{1F310}";
 }

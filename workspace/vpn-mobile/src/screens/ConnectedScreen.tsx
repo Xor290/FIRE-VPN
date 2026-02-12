@@ -8,14 +8,20 @@ import {
     Animated,
     ActivityIndicator,
     Platform,
+    Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Colors, Spacing, BorderRadius, getCountryFlag } from "../theme";
 import { useAuth } from "../contexts/AuthContext";
 import { ServerCard } from "../components/ServerCard";
 import { StatusPill } from "../components/StatusPill";
 
-export function ConnectedScreen() {
+type Props = {
+    navigation: NativeStackNavigationProp<any>;
+};
+
+export function ConnectedScreen({ navigation }: Props) {
     const {
         connectedServer,
         connectionInfo,
@@ -77,13 +83,21 @@ export function ConnectedScreen() {
 
             {/* Header */}
             <View style={styles.header}>
-                <View>
-                    <Text style={styles.title}>FIRE VPN</Text>
-                    {user && <Text style={styles.userEmail}>{user.email}</Text>}
+                <Image
+                    source={require("../../assets/logo-ghost.png")}
+                    style={styles.headerLogo}
+                />
+                <View style={styles.headerActions}>
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate("Profile")}
+                        style={styles.profileButton}
+                    >
+                        <Text style={styles.profileText}>Profil</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={logout}>
+                        <Text style={styles.logoutText}>Deconnexion</Text>
+                    </TouchableOpacity>
                 </View>
-                <TouchableOpacity onPress={logout}>
-                    <Text style={styles.logoutText}>Deconnexion</Text>
-                </TouchableOpacity>
             </View>
 
             {/* Error */}
@@ -232,16 +246,35 @@ const styles = StyleSheet.create({
         paddingTop: Spacing.xl,
         paddingBottom: Spacing.md,
     },
-    title: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: Colors.accent,
-        letterSpacing: 2,
+    headerLeft: {
+        alignItems: "flex-start",
+    },
+    headerLogo: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
     },
     userEmail: {
         color: Colors.textMuted,
-        fontSize: 12,
-        marginTop: 2,
+        fontSize: 11,
+        marginTop: Spacing.xs,
+    },
+    headerActions: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: Spacing.md,
+    },
+    profileButton: {
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius.sm,
+        backgroundColor: Colors.accent,
+        marginRight: Spacing.sm,
+    },
+    profileText: {
+        color: Colors.textPrimary,
+        fontSize: 13,
+        fontWeight: "500",
     },
     logoutText: {
         color: Colors.textMuted,

@@ -62,7 +62,7 @@ export function LoginScreen() {
 
                     {/* Header */}
                     <View style={styles.header}>
-                        <Text style={styles.title}>FIRE VPN</Text>
+                        <Text style={styles.title}>SilentGhostVPN</Text>
                         <Text style={styles.subtitle}>Connexion securisee</Text>
                     </View>
 

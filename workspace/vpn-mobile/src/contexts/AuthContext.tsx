@@ -6,7 +6,7 @@ import React, {
     useCallback,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { UserInfo, Server, ConnectionInfo } from "../types";
+import { UserInfo, Server, ConnectionInfo, PeerStatus } from "../types";
 import * as api from "../api/client";
 import ExpoWireguard from "../../modules/expo-wireguard";
 import type { TunnelStatus } from "../../modules/expo-wireguard";
@@ -50,7 +50,8 @@ type Action =
     | { type: "SET_API_URL"; payload: string }
     | { type: "SET_SAVED_EMAIL"; payload: string }
     | { type: "UPDATE_PROFILE"; payload: UserInfo }
-    | { type: "SET_TUNNEL_STATUS"; payload: TunnelStatus };
+    | { type: "SET_TUNNEL_STATUS"; payload: TunnelStatus }
+    | { type: "RESTORE_CONNECTION"; payload: { server: Server } };
 
 function reducer(state: AppState, action: Action): AppState {
     switch (action.type) {
@@ -117,6 +118,12 @@ function reducer(state: AppState, action: Action): AppState {
             };
         case "SET_TUNNEL_STATUS":
             return { ...state, tunnelStatus: action.payload };
+        case "RESTORE_CONNECTION":
+            return {
+                ...state,
+                connectedServer: action.payload.server,
+                isLoading: false,
+            };
         default:
             return state;
     }
@@ -256,15 +263,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!state.token) return;
         dispatch({ type: "SET_LOADING", payload: true });
         try {
-            const servers = await api.listServers(state.apiUrl, state.token);
+            const [servers, peers] = await Promise.all([
+                api.listServers(state.apiUrl, state.token),
+                api.getStatus(state.apiUrl, state.token),
+            ]);
             dispatch({ type: "SET_SERVERS", payload: servers });
+            if (peers.length > 0 && !state.connectedServer) {
+                const activePeer = peers[0];
+                const server = servers.find(
+                    (s) => s.id === activePeer.server_id,
+                );
+                if (server) {
+                    dispatch({
+                        type: "RESTORE_CONNECTION",
+                        payload: { server },
+                    });
+                }
+            }
         } catch (e: any) {
             dispatch({
                 type: "SET_ERROR",
                 payload: e.message ?? "Erreur chargement serveurs",
             });
         }
-    }, [state.apiUrl, state.token]);
+    }, [state.apiUrl, state.token, state.connectedServer]);
 
     const handleConnect = useCallback(
         async (server: Server) => {
