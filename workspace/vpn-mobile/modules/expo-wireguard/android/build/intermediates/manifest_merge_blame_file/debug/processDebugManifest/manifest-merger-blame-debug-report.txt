@@ -1,0 +1,14 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="expo.modules.wireguard" >
+4
+5    <uses-sdk android:minSdkVersion="24" />
+6
+7    <uses-permission android:name="android.permission.INTERNET" />
+7-->/home/xor_fakers/FIRE-VPN/workspace/vpn-mobile/modules/expo-wireguard/android/src/main/AndroidManifest.xml:2:5-67
+7-->/home/xor_fakers/FIRE-VPN/workspace/vpn-mobile/modules/expo-wireguard/android/src/main/AndroidManifest.xml:2:22-64
+8    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+8-->/home/xor_fakers/FIRE-VPN/workspace/vpn-mobile/modules/expo-wireguard/android/src/main/AndroidManifest.xml:3:5-77
+8-->/home/xor_fakers/FIRE-VPN/workspace/vpn-mobile/modules/expo-wireguard/android/src/main/AndroidManifest.xml:3:22-74
+9
+10</manifest>

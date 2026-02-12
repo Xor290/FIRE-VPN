@@ -32,6 +32,53 @@ jobs:
               working-directory: workspace/vpn-mobile
               run: npx tsc --noEmit
 
+    build-dev-apk:
+        needs: typecheck
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
+                  cache-dependency-path: workspace/vpn-mobile/package-lock.json
+
+            - name: Setup Expo & EAS CLI
+              uses: expo/expo-github-action@v8
+              with:
+                  eas-version: latest
+                  token: ${{ secrets.EXPO_TOKEN }}
+
+            - name: Install dependencies
+              working-directory: workspace/vpn-mobile
+              run: npm ci
+
+            - name: Inject EAS project ID
+              working-directory: workspace/vpn-mobile
+              run: |
+                  jq '.expo.extra.eas.projectId = "${{ secrets.EXPO_PROJECT_ID }}"' app.json > app.tmp.json
+                  mv app.tmp.json app.json
+
+            - name: Build development APK
+              working-directory: workspace/vpn-mobile
+              run: eas build --platform android --profile development --non-interactive
+
+            - name: Download development APK
+              working-directory: workspace/vpn-mobile
+              run: |
+                  APK_URL=$(eas build:list --platform android --status finished --limit 1 --json --non-interactive | jq -r '.[0].artifacts.buildUrl')
+                  curl -L -o fire-vpn-dev.apk "$APK_URL"
+
+            - name: Upload development APK artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: fire-vpn-android-dev-apk
+                  path: workspace/vpn-mobile/fire-vpn-dev.apk
+                  retention-days: 14
+
     build-apk:
         needs: typecheck
         runs-on: ubuntu-latest
