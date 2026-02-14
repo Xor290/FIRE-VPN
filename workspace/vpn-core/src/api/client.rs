@@ -1,4 +1,7 @@
-use super::{ApiClient, ApiError, ApiErrorResp, ApiSuccess, ConnectionInfo, PeerStatus, Server};
+use super::{
+    ApiClient, ApiError, ApiErrorResp, ApiSuccess, ConnectionInfo, PeerStatus, ProfileUpdateResp,
+    Server,
+};
 
 impl ApiClient {
     pub fn new(base_url: &str, token: &str) -> Self {
@@ -72,6 +75,45 @@ impl ApiClient {
 
         let success: ApiSuccess<Vec<PeerStatus>> = resp.json()?;
         Ok(success.data)
+    }
+
+    pub fn update_profile(
+        &self,
+        username: &str,
+        email: &str,
+        password: &str,
+    ) -> Result<crate::auth::UserInfo, ApiError> {
+        let resp = self
+            .client
+            .put(format!("{}/profile/update", self.base_url))
+            .bearer_auth(&self.token)
+            .json(&serde_json::json!({
+                "username": username,
+                "email": email,
+                "password": password,
+            }))
+            .send()?;
+
+        if !resp.status().is_success() {
+            return Err(self.parse_error(resp));
+        }
+
+        let body: ProfileUpdateResp = resp.json()?;
+        Ok(body.user)
+    }
+
+    pub fn delete_account(&self) -> Result<(), ApiError> {
+        let resp = self
+            .client
+            .delete(format!("{}/profile/delete", self.base_url))
+            .bearer_auth(&self.token)
+            .send()?;
+
+        if !resp.status().is_success() {
+            return Err(self.parse_error(resp));
+        }
+
+        Ok(())
     }
 
     fn parse_error(&self, resp: reqwest::blocking::Response) -> ApiError {

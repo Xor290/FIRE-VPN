@@ -49,6 +49,11 @@ pub(crate) struct ApiErrorResp {
     pub error: String,
 }
 
+#[derive(Deserialize)]
+pub(crate) struct ProfileUpdateResp {
+    pub user: crate::auth::UserInfo,
+}
+
 pub struct ApiClient {
     pub(crate) base_url: String,
     pub(crate) token: String,

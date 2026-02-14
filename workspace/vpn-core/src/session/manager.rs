@@ -84,4 +84,22 @@ impl Session {
         }
         self.connect(new_server_id)
     }
+
+    pub fn update_profile(
+        &mut self,
+        username: &str,
+        email: &str,
+        password: &str,
+    ) -> Result<(), SessionError> {
+        let updated_user = self.client.update_profile(username, email, password)?;
+        self.user = updated_user;
+        Ok(())
+    }
+
+    pub fn delete_account(&mut self) -> Result<(), SessionError> {
+        self.client.delete_account()?;
+        self.current_server = None;
+        self.config = None;
+        Ok(())
+    }
 }
