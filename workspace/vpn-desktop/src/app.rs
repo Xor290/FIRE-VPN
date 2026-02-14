@@ -1,3 +1,4 @@
+use crate::ui::flags::FlagStore;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use vpn_core::api::Server;
@@ -32,10 +33,37 @@ pub struct VpnApp {
     selected_server: Option<usize>,
     is_connecting: bool,
     connection_status: String,
+    showing_profile: bool,
+    pub flag_store: FlagStore,
+    // Profile editing
+    profile_editing: bool,
+    profile_username: String,
+    profile_email: String,
+    profile_password: String,
+    profile_error: Option<String>,
+    profile_success: Option<String>,
 }
 
 impl VpnApp {
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        // Configure dark visuals matching mobile palette
+        let mut visuals = egui::Visuals::dark();
+        visuals.panel_fill = egui::Color32::from_rgb(0, 0, 0);
+        visuals.window_fill = egui::Color32::from_rgb(0, 0, 0);
+        visuals.extreme_bg_color = egui::Color32::from_rgb(0, 0, 0);
+        visuals.faint_bg_color = egui::Color32::from_rgb(26, 26, 26);
+        visuals.widgets.noninteractive.bg_fill = egui::Color32::from_rgb(0, 0, 0);
+        visuals.widgets.inactive.bg_fill = egui::Color32::from_rgb(26, 26, 26);
+        visuals.widgets.inactive.bg_stroke =
+            egui::Stroke::new(1.0, egui::Color32::from_rgb(48, 60, 61));
+        visuals.widgets.active.bg_fill = egui::Color32::from_rgb(26, 26, 26);
+        visuals.widgets.hovered.bg_fill = egui::Color32::from_rgb(26, 26, 26);
+        visuals.selection.bg_fill = egui::Color32::from_rgb(75, 107, 251);
+        cc.egui_ctx.set_visuals(visuals);
+
+        let mut flag_store = FlagStore::new();
+        flag_store.load(&cc.egui_ctx);
+
         let config_path = Self::get_config_path();
         let config = Self::load_config(&config_path);
 
@@ -52,6 +80,14 @@ impl VpnApp {
             selected_server: None,
             is_connecting: false,
             connection_status: "Déconnecté".to_string(),
+            showing_profile: false,
+            flag_store,
+            profile_editing: false,
+            profile_username: String::new(),
+            profile_email: String::new(),
+            profile_password: String::new(),
+            profile_error: None,
+            profile_success: None,
             config,
         }
     }
@@ -248,6 +284,7 @@ impl VpnApp {
         self.session = None;
         self.servers.clear();
         self.selected_server = None;
+        self.showing_profile = false;
         self.state = AppState::Login;
         self.email.clear();
         self.password.clear();
@@ -255,6 +292,114 @@ impl VpnApp {
         if let Some(saved_email) = &self.config.saved_email {
             self.email = saved_email.clone();
         }
+    }
+
+    pub fn handle_delete_account(&mut self) {
+        if let Some(session) = &mut self.session {
+            if let Err(e) = session.delete_account() {
+                self.profile_error = Some(format!("Erreur: {}", e));
+                return;
+            }
+        }
+        self.handle_logout();
+    }
+
+    pub fn handle_update_profile(&mut self) {
+        self.profile_error = None;
+        self.profile_success = None;
+
+        let username = self.profile_username.trim().to_string();
+        let email = self.profile_email.trim().to_string();
+        let password = self.profile_password.clone();
+
+        if username.len() < 3 {
+            self.profile_error = Some("Le nom doit contenir au moins 3 caracteres.".into());
+            return;
+        }
+        if !email.contains('@') {
+            self.profile_error = Some("Email invalide.".into());
+            return;
+        }
+        if password.len() < 8 {
+            self.profile_error =
+                Some("Le mot de passe doit contenir au moins 8 caracteres.".into());
+            return;
+        }
+
+        match &mut self.session {
+            Some(session) => match session.update_profile(&username, &email, &password) {
+                Ok(()) => {
+                    self.profile_password.clear();
+                    self.profile_editing = false;
+                    self.profile_success = Some("Profil mis a jour.".into());
+                }
+                Err(e) => {
+                    self.profile_error = Some(format!("Erreur: {}", e));
+                }
+            },
+            None => {
+                self.profile_error = Some("Session expirée.".into());
+            }
+        }
+    }
+
+    pub fn show_profile(&mut self) {
+        self.showing_profile = true;
+        self.profile_editing = false;
+        self.profile_error = None;
+        self.profile_success = None;
+    }
+
+    pub fn hide_profile(&mut self) {
+        self.showing_profile = false;
+        self.profile_editing = false;
+        self.profile_error = None;
+        self.profile_success = None;
+    }
+
+    pub fn start_profile_edit(&mut self) {
+        if let Some(session) = &self.session {
+            self.profile_username = session.user().username.clone();
+            self.profile_email = session.user().email.clone();
+        }
+        self.profile_password.clear();
+        self.profile_error = None;
+        self.profile_success = None;
+        self.profile_editing = true;
+    }
+
+    pub fn cancel_profile_edit(&mut self) {
+        self.profile_editing = false;
+        self.profile_error = None;
+        self.profile_password.clear();
+    }
+
+    pub fn is_profile_editing(&self) -> bool {
+        self.profile_editing
+    }
+
+    pub fn get_profile_username(&mut self) -> &mut String {
+        &mut self.profile_username
+    }
+
+    pub fn get_profile_email(&mut self) -> &mut String {
+        &mut self.profile_email
+    }
+
+    pub fn get_profile_password(&mut self) -> &mut String {
+        &mut self.profile_password
+    }
+
+    pub fn get_profile_error(&self) -> Option<&str> {
+        self.profile_error.as_deref()
+    }
+
+    pub fn get_profile_success(&self) -> Option<&str> {
+        self.profile_success.as_deref()
+    }
+
+    pub fn is_vpn_connected(&self) -> bool {
+        self.state == AppState::Connected
     }
 
     pub fn get_email(&mut self) -> &mut String {
@@ -313,17 +458,31 @@ impl VpnApp {
 
 impl eframe::App for VpnApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| match self.state {
-            AppState::Login => {
-                crate::ui::login::render(ui, self);
-            }
-            AppState::ServerList => {
-                crate::ui::servers::render(ui, self);
-            }
-            AppState::Connected => {
-                crate::ui::connection::render(ui, self);
-            }
-        });
+        egui::CentralPanel::default()
+            .frame(
+                egui::Frame::none()
+                    .fill(egui::Color32::from_rgb(0, 0, 0))
+                    .inner_margin(egui::Margin::symmetric(20.0, 12.0)),
+            )
+            .show(ctx, |ui| {
+                // Profile overlay takes precedence when active
+                if self.showing_profile {
+                    crate::ui::profile::render(ui, self);
+                    return;
+                }
+
+                match self.state {
+                    AppState::Login => {
+                        crate::ui::login::render(ui, self);
+                    }
+                    AppState::ServerList => {
+                        crate::ui::servers::render(ui, self);
+                    }
+                    AppState::Connected => {
+                        crate::ui::connection::render(ui, self);
+                    }
+                }
+            });
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {

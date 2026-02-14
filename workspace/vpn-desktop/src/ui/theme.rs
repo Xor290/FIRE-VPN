@@ -1,48 +1,42 @@
 use egui::{Color32, FontFamily, FontId, Margin, Pos2, Rect, Rounding, Stroke, Vec2};
 
-// ── Color palette ──────────────────────────────────────────────────────────────
-pub const BG_DARK: Color32 = Color32::from_rgb(13, 17, 23);
-pub const BG_CARD: Color32 = Color32::from_rgb(22, 27, 34);
-pub const BG_CARD_HOVER: Color32 = Color32::from_rgb(30, 37, 48);
+// ── Color palette (matched to mobile app) ──────────────────────────────────────
+pub const BG_DARK: Color32 = Color32::from_rgb(0, 0, 0); // #000000
+pub const BG_CARD: Color32 = Color32::from_rgb(26, 26, 26); // #1a1a1a
+pub const BG_CARD_HOVER: Color32 = Color32::from_rgb(27, 36, 80); // #1B2450 (accent dim)
 
-pub const ACCENT: Color32 = Color32::from_rgb(88, 166, 255);
-pub const ACCENT_HOVER: Color32 = Color32::from_rgb(110, 180, 255);
-pub const ACCENT_DIM: Color32 = Color32::from_rgb(56, 110, 180);
-pub const ACCENT_GLOW: Color32 = Color32::from_rgb(88, 166, 255);
+pub const ACCENT: Color32 = Color32::from_rgb(75, 107, 251); // #4B6BFB
+pub const ACCENT_HOVER: Color32 = Color32::from_rgb(108, 138, 255); // #6C8AFF
+pub const ACCENT_DIM: Color32 = Color32::from_rgb(27, 36, 80); // #1B2450
+pub const SUCCESS: Color32 = Color32::from_rgb(63, 185, 80); // #3FB950
+pub const SUCCESS_DIM: Color32 = Color32::from_rgb(35, 92, 45); // #235C2D
+pub const ERROR: Color32 = Color32::from_rgb(248, 81, 73); // #F85149
 
-pub const SUCCESS: Color32 = Color32::from_rgb(63, 185, 80);
-pub const SUCCESS_DIM: Color32 = Color32::from_rgb(35, 90, 45);
-pub const ERROR: Color32 = Color32::from_rgb(248, 81, 73);
-pub const ERROR_DIM: Color32 = Color32::from_rgb(100, 30, 30);
+pub const TEXT_PRIMARY: Color32 = Color32::from_rgb(230, 237, 243); // #E6EDF3
+pub const TEXT_SECONDARY: Color32 = Color32::from_rgb(139, 148, 158); // #8B949E
+pub const TEXT_MUTED: Color32 = Color32::from_rgb(110, 118, 129); // #6E7681
 
-pub const TEXT_PRIMARY: Color32 = Color32::from_rgb(230, 237, 243);
-pub const TEXT_SECONDARY: Color32 = Color32::from_rgb(139, 148, 158);
-pub const TEXT_MUTED: Color32 = Color32::from_rgb(110, 118, 129);
+pub const BORDER: Color32 = Color32::from_rgb(48, 60, 61); // #303C3D
 
-pub const BORDER: Color32 = Color32::from_rgb(48, 54, 61);
+pub const DANGER: Color32 = Color32::from_rgb(218, 54, 51); // #DA3633
+pub const DANGER_HOVER: Color32 = Color32::from_rgb(240, 70, 67);
 
-pub const DISCONNECT_RED: Color32 = Color32::from_rgb(218, 54, 51);
-pub const DISCONNECT_RED_HOVER: Color32 = Color32::from_rgb(240, 70, 67);
-
+// ── Top accent bar (solid accent like mobile) ──────────────────────────────────
 pub fn draw_top_accent(ui: &mut egui::Ui) {
     let rect = ui.available_rect_before_wrap();
     let bar = Rect::from_min_size(rect.min, Vec2::new(rect.width(), 3.0));
     let painter = ui.painter();
+    painter.rect_filled(bar, Rounding::ZERO, ACCENT);
+    ui.add_space(8.0);
+}
 
-    // Simple gradient effect with 3 segments
-    let third = bar.width() / 3.0;
-    let colors = [
-        Color32::from_rgb(88, 166, 255),
-        Color32::from_rgb(130, 80, 255),
-        Color32::from_rgb(88, 166, 255),
-    ];
-    for (i, color) in colors.iter().enumerate() {
-        let segment = Rect::from_min_size(
-            Pos2::new(bar.min.x + third * i as f32, bar.min.y),
-            Vec2::new(third, 3.0),
-        );
-        painter.rect_filled(segment, Rounding::ZERO, *color);
-    }
+// ── Centered accent bar (login screen style) ───────────────────────────────────
+pub fn draw_centered_accent_bar(ui: &mut egui::Ui, width: f32) {
+    let available = ui.available_rect_before_wrap();
+    let x = available.center().x - width / 2.0;
+    let bar = Rect::from_min_size(Pos2::new(x, available.min.y), Vec2::new(width, 3.0));
+    let painter = ui.painter();
+    painter.rect_filled(bar, Rounding::same(2.0), ACCENT);
     ui.add_space(8.0);
 }
 
@@ -66,25 +60,27 @@ pub fn primary_button(ui: &mut egui::Ui, text: &str, enabled: bool) -> bool {
         let (bg, text_color) = if !enabled {
             (ACCENT_DIM, TEXT_MUTED)
         } else if response.hovered() {
-            (ACCENT_HOVER, BG_DARK)
+            (ACCENT_HOVER, TEXT_PRIMARY)
         } else {
-            (ACCENT, BG_DARK)
+            (ACCENT, TEXT_PRIMARY)
         };
 
         painter.rect_filled(rect, Rounding::same(10.0), bg);
-
-        if enabled && response.hovered() {
-            painter.rect_stroke(rect, Rounding::same(10.0), Stroke::new(1.0, ACCENT_GLOW));
-        }
 
         painter.text(
             rect.center(),
             egui::Align2::CENTER_CENTER,
             text,
-            FontId::new(14.0, FontFamily::Proportional),
+            FontId::new(15.0, FontFamily::Proportional),
             text_color,
         );
     }
+
+    let response = if enabled {
+        response.on_hover_cursor(egui::CursorIcon::PointingHand)
+    } else {
+        response
+    };
 
     enabled && response.clicked()
 }
@@ -96,9 +92,9 @@ pub fn danger_button(ui: &mut egui::Ui, text: &str) -> bool {
     if ui.is_rect_visible(rect) {
         let painter = ui.painter();
         let bg = if response.hovered() {
-            DISCONNECT_RED_HOVER
+            DANGER_HOVER
         } else {
-            DISCONNECT_RED
+            DANGER
         };
 
         painter.rect_filled(rect, Rounding::same(10.0), bg);
@@ -106,42 +102,44 @@ pub fn danger_button(ui: &mut egui::Ui, text: &str) -> bool {
             rect.center(),
             egui::Align2::CENTER_CENTER,
             text,
-            FontId::new(14.0, FontFamily::Proportional),
+            FontId::new(15.0, FontFamily::Proportional),
             TEXT_PRIMARY,
         );
     }
 
-    response.clicked()
+    response
+        .on_hover_cursor(egui::CursorIcon::PointingHand)
+        .clicked()
 }
 
 /// Styled text input field with label
 pub fn text_field(ui: &mut egui::Ui, label: &str, value: &mut String) -> egui::Response {
-    ui.label(egui::RichText::new(label).size(12.0).color(TEXT_SECONDARY));
+    ui.label(egui::RichText::new(label).size(13.0).color(TEXT_SECONDARY));
     ui.add_space(4.0);
     let response = ui.add(
         egui::TextEdit::singleline(value)
             .desired_width(ui.available_width())
-            .margin(Margin::symmetric(12.0, 10.0))
-            .font(FontId::new(14.0, FontFamily::Proportional)),
+            .margin(Margin::symmetric(12.0, 12.0))
+            .font(FontId::new(15.0, FontFamily::Proportional)),
     );
     response
 }
 
 /// Password input field with label
 pub fn password_field(ui: &mut egui::Ui, label: &str, value: &mut String) -> egui::Response {
-    ui.label(egui::RichText::new(label).size(12.0).color(TEXT_SECONDARY));
+    ui.label(egui::RichText::new(label).size(13.0).color(TEXT_SECONDARY));
     ui.add_space(4.0);
     let response = ui.add(
         egui::TextEdit::singleline(value)
             .password(true)
             .desired_width(ui.available_width())
-            .margin(Margin::symmetric(12.0, 10.0))
-            .font(FontId::new(14.0, FontFamily::Proportional)),
+            .margin(Margin::symmetric(12.0, 12.0))
+            .font(FontId::new(15.0, FontFamily::Proportional)),
     );
     response
 }
 
-/// Section heading
+/// Section heading (uppercase, muted, with letter spacing)
 pub fn section_heading(ui: &mut egui::Ui, text: &str) {
     ui.label(
         egui::RichText::new(text)
@@ -149,7 +147,7 @@ pub fn section_heading(ui: &mut egui::Ui, text: &str) {
             .color(TEXT_MUTED)
             .strong(),
     );
-    ui.add_space(6.0);
+    ui.add_space(8.0);
 }
 
 /// Status pill (small colored badge)
@@ -181,34 +179,70 @@ pub fn status_pill(ui: &mut egui::Ui, text: &str, color: Color32) {
     }
 }
 
-/// Info row (label: value) for connection details
+/// Info row with bottom separator (matching mobile detail rows)
 pub fn info_row(ui: &mut egui::Ui, label: &str, value: &str) {
     ui.horizontal(|ui| {
-        ui.label(egui::RichText::new(label).size(12.0).color(TEXT_MUTED));
+        ui.label(egui::RichText::new(label).size(13.0).color(TEXT_MUTED));
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             ui.label(
                 egui::RichText::new(value)
-                    .size(12.0)
+                    .size(13.0)
                     .color(TEXT_PRIMARY)
                     .family(FontFamily::Monospace),
             );
         });
     });
+    // Subtle separator line like mobile
+    let rect = ui.available_rect_before_wrap();
+    let line_rect = Rect::from_min_size(rect.min, Vec2::new(rect.width(), 1.0));
+    ui.painter().rect_filled(
+        line_rect,
+        Rounding::ZERO,
+        Color32::from_rgba_premultiplied(48, 60, 61, 40),
+    );
+    ui.add_space(8.0);
 }
 
-/// Country flag emoji from country code
-pub fn country_flag(country: &str) -> &str {
-    match country.to_uppercase().as_str() {
-        "FR" | "FRANCE" => "FR",
-        "US" | "USA" | "UNITED STATES" => "US",
-        "DE" | "GERMANY" | "ALLEMAGNE" => "DE",
-        "UK" | "GB" | "UNITED KINGDOM" | "ROYAUME-UNI" => "GB",
-        "NL" | "NETHERLANDS" | "PAYS-BAS" => "NL",
-        "JP" | "JAPAN" | "JAPON" => "JP",
-        "CA" | "CANADA" => "CA",
-        "AU" | "AUSTRALIA" | "AUSTRALIE" => "AU",
-        "SG" | "SINGAPORE" | "SINGAPOUR" => "SG",
-        "CH" | "SWITZERLAND" | "SUISSE" => "CH",
-        _ => "--",
+/// Draw an avatar circle with initial letter (like mobile profile)
+pub fn draw_avatar(ui: &mut egui::Ui, initial: char, size: f32) {
+    let (rect, _) = ui.allocate_exact_size(Vec2::splat(size), egui::Sense::hover());
+    if ui.is_rect_visible(rect) {
+        let painter = ui.painter();
+        let center = rect.center();
+        let radius = size / 2.0;
+
+        painter.circle_filled(center, radius, ACCENT);
+        painter.text(
+            center,
+            egui::Align2::CENTER_CENTER,
+            initial.to_uppercase().to_string(),
+            FontId::new(size * 0.4, FontFamily::Proportional),
+            BG_DARK,
+        );
     }
+}
+
+/// Small profile button (like mobile)
+pub fn small_button(ui: &mut egui::Ui, text: &str, bg: Color32, text_color: Color32) -> bool {
+    let galley = ui.painter().layout_no_wrap(
+        text.to_string(),
+        FontId::new(13.0, FontFamily::Proportional),
+        text_color,
+    );
+    let desired_size = galley.size() + Vec2::new(24.0, 16.0);
+    let (rect, response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
+
+    if ui.is_rect_visible(rect) {
+        let painter = ui.painter();
+        painter.rect_filled(rect, Rounding::same(6.0), bg);
+        painter.galley(
+            rect.center() - galley.size() / 2.0,
+            galley,
+            Color32::PLACEHOLDER,
+        );
+    }
+
+    response
+        .on_hover_cursor(egui::CursorIcon::PointingHand)
+        .clicked()
 }

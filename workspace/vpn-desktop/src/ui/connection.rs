@@ -5,20 +5,25 @@ use egui::{Rounding, Stroke, Vec2};
 pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
     theme::draw_top_accent(ui);
 
-    // ── Header bar ─────────────────────────────────────────────────────────
+    // ── Header bar (mobile-style) ──────────────────────────────────────────
     ui.horizontal(|ui| {
+        ui.add_space(4.0);
+
+        // Logo
         ui.label(
-            egui::RichText::new("FIRE VPN")
-                .size(18.0)
+            egui::RichText::new("SilentGhostVPN")
+                .size(16.0)
                 .color(theme::ACCENT)
                 .strong(),
         );
+
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            // Logout link
             if ui
                 .add(
                     egui::Label::new(
                         egui::RichText::new("Deconnexion")
-                            .size(12.0)
+                            .size(13.0)
                             .color(theme::TEXT_MUTED),
                     )
                     .sense(egui::Sense::click()),
@@ -28,26 +33,53 @@ pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
             {
                 app.handle_logout();
             }
+
+            ui.add_space(8.0);
+
+            // Profile button
+            if theme::small_button(ui, "Profil", theme::ACCENT, theme::TEXT_PRIMARY) {
+                app.show_profile();
+            }
         });
     });
 
     ui.add_space(16.0);
 
-    // ── Connection status hero ─────────────────────────────────────────────
+    // ── Connection status hero (with pulsing animation) ────────────────────
     ui.vertical_centered(|ui| {
-        // Pulsing circle indicator
+        ui.add_space(8.0);
+
+        // Pulsing circle indicator (animated like mobile)
+        let time = ui.input(|i| i.time);
+        let pulse = ((time * 2.6).sin() as f32 + 1.0) / 2.0; // 0..1 oscillation
+
         let (rect, _) = ui.allocate_exact_size(Vec2::splat(80.0), egui::Sense::hover());
         if ui.is_rect_visible(rect) {
             let painter = ui.painter();
             let center = rect.center();
 
-            // Outer glow ring
-            painter.circle_stroke(center, 38.0, Stroke::new(2.0, theme::SUCCESS_DIM));
-            // Inner filled circle
-            painter.circle_filled(center, 28.0, theme::SUCCESS_DIM);
+            // Animated outer ring (expands and fades like mobile pulseRing)
+            let ring_scale = 1.0 + pulse * 0.4; // 1.0 to 1.4
+            let ring_alpha = ((1.0 - pulse) * 0.6 * 255.0) as u8; // fades out
+            let ring_radius = 30.0 * ring_scale;
+            painter.circle_stroke(
+                center,
+                ring_radius,
+                Stroke::new(
+                    2.0,
+                    egui::Color32::from_rgba_unmultiplied(63, 185, 80, ring_alpha),
+                ),
+            );
+
+            // Static inner glow
+            painter.circle_filled(center, 24.0, theme::SUCCESS_DIM);
+
             // Core dot
-            painter.circle_filled(center, 12.0, theme::SUCCESS);
+            painter.circle_filled(center, 10.0, theme::SUCCESS);
         }
+
+        // Request repaint for animation
+        ui.ctx().request_repaint();
 
         ui.add_space(12.0);
 
@@ -58,21 +90,33 @@ pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
                 .strong(),
         );
 
-        ui.add_space(4.0);
-        ui.label(
-            egui::RichText::new(app.get_connection_status())
-                .size(13.0)
-                .color(theme::TEXT_SECONDARY),
-        );
+        // Show connected server name with flag
+        if let Some(idx) = app.get_selected_server() {
+            let servers = app.get_servers();
+            if let Some(server) = servers.get(idx) {
+                ui.add_space(4.0);
+                ui.horizontal(|ui| {
+                    if let Some(tex) = app.flag_store.get(&server.country) {
+                        let size = egui::vec2(22.0, 14.0);
+                        ui.add(egui::Image::new(tex).fit_to_exact_size(size).rounding(2.0));
+                    }
+                    ui.label(
+                        egui::RichText::new(&server.name)
+                            .size(14.0)
+                            .color(theme::TEXT_SECONDARY),
+                    );
+                });
+            }
+        }
     });
 
     ui.add_space(20.0);
 
+    // ── Connection details card ────────────────────────────────────────────
     if let Some(session) = app.get_session() {
         if let Some(config) = session.current_config() {
             let address = config.address.clone();
             let dns = config.dns.clone();
-            let endpoint = config.endpoint.clone();
 
             theme::card_frame(ui, |ui| {
                 ui.set_min_width(ui.available_width());
@@ -80,16 +124,13 @@ pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
                 ui.label(
                     egui::RichText::new("DETAILS DE CONNEXION")
                         .size(11.0)
-                        .color(theme::TEXT_MUTED)
+                        .color(theme::TEXT_SECONDARY)
                         .strong(),
                 );
-                ui.add_space(10.0);
+                ui.add_space(12.0);
 
                 theme::info_row(ui, "IP locale", &address);
-                ui.add_space(4.0);
                 theme::info_row(ui, "DNS", &dns);
-                ui.add_space(4.0);
-                theme::info_row(ui, "Endpoint", &endpoint);
             });
         }
     }
@@ -97,7 +138,7 @@ pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
     ui.add_space(16.0);
 
     // ── Server switch section ──────────────────────────────────────────────
-    theme::section_heading(ui, "CHANGER DE SERVEUR");
+    theme::section_heading(ui, "SERVEURS");
 
     let servers: Vec<_> = app
         .get_servers()
@@ -106,7 +147,7 @@ pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
         .collect();
     let selected = app.get_selected_server();
 
-    let bottom_space = 70.0;
+    let bottom_space = 80.0;
     let scroll_height = (ui.available_height() - bottom_space).max(60.0);
 
     egui::ScrollArea::vertical()
@@ -128,27 +169,26 @@ pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
 
                 egui::Frame::none()
                     .fill(fill)
-                    .rounding(Rounding::same(8.0))
+                    .rounding(Rounding::same(12.0))
                     .stroke(border)
                     .inner_margin(egui::Margin::symmetric(14.0, 10.0))
                     .show(ui, |ui| {
                         ui.set_min_width(ui.available_width());
                         ui.horizontal(|ui| {
-                            let flag = theme::country_flag(country);
-                            ui.label(
-                                egui::RichText::new(flag)
-                                    .size(12.0)
-                                    .color(theme::TEXT_MUTED)
-                                    .family(egui::FontFamily::Monospace),
-                            );
+                            if let Some(tex) = app.flag_store.get(country) {
+                                let size = egui::vec2(22.0, 14.0);
+                                ui.add(egui::Image::new(tex).fit_to_exact_size(size).rounding(2.0));
+                            }
+
+                            ui.add_space(4.0);
 
                             let label = if is_current {
-                                egui::RichText::new(format!("{} - {}", country, name))
+                                egui::RichText::new(name)
                                     .size(13.0)
                                     .color(theme::SUCCESS)
                                     .strong()
                             } else {
-                                egui::RichText::new(format!("{} - {}", country, name))
+                                egui::RichText::new(name)
                                     .size(13.0)
                                     .color(theme::TEXT_PRIMARY)
                             };
@@ -163,7 +203,7 @@ pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
                                         .add(
                                             egui::Label::new(
                                                 egui::RichText::new("Changer")
-                                                    .size(11.0)
+                                                    .size(13.0)
                                                     .color(theme::ACCENT),
                                             )
                                             .sense(egui::Sense::click()),
@@ -178,12 +218,21 @@ pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
                         });
                     });
 
-                ui.add_space(4.0);
+                ui.add_space(8.0);
             }
         });
 
-    // ── Bottom disconnect button ───────────────────────────────────────────
-    ui.add_space(8.0);
+    // ── Footer with separator ──────────────────────────────────────────────
+    ui.add_space(4.0);
+    let separator_rect = ui.available_rect_before_wrap();
+    let line = egui::Rect::from_min_size(
+        separator_rect.min,
+        egui::Vec2::new(separator_rect.width(), 1.0),
+    );
+    ui.painter()
+        .rect_filled(line, Rounding::ZERO, theme::BORDER);
+    ui.add_space(12.0);
+
     if theme::danger_button(ui, "Se deconnecter") {
         app.handle_disconnect();
     }
