@@ -27,11 +27,9 @@ export function ConnectedScreen({ navigation }: Props) {
         connectionInfo,
         servers,
         isLoading,
-        error,
         disconnectFromServer,
         switchServer,
         logout,
-        clearError,
         user,
         tunnelStatus,
     } = useAuth();
@@ -99,16 +97,6 @@ export function ConnectedScreen({ navigation }: Props) {
                     </TouchableOpacity>
                 </View>
             </View>
-
-            {/* Error */}
-            {error && (
-                <View style={styles.errorBox}>
-                    <Text style={styles.errorText}>{error}</Text>
-                    <TouchableOpacity onPress={clearError}>
-                        <Text style={styles.errorClose}>X</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Connection status hero */}

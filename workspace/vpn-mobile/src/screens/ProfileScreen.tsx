@@ -33,12 +33,10 @@ export function ProfileScreen({ navigation }: Props) {
         connectedServer,
         apiUrl,
         isLoading,
-        error,
         logout,
         refreshProfile,
         updateProfile,
         deleteAccount,
-        clearError,
     } = useAuth();
 
     const [editing, setEditing] = useState(false);
@@ -69,12 +67,9 @@ export function ProfileScreen({ navigation }: Props) {
             );
             return;
         }
-        clearError();
         await updateProfile(username.trim(), email.trim(), password);
-        if (!error) {
-            setPassword("");
-            setEditing(false);
-        }
+        setPassword("");
+        setEditing(false);
     };
 
     const handleDelete = () => {
@@ -135,12 +130,6 @@ export function ProfileScreen({ navigation }: Props) {
                     <Text style={styles.username}>{user?.username ?? "-"}</Text>
                     <Text style={styles.email}>{user?.email ?? "-"}</Text>
                 </View>
-
-                {error && (
-                    <View style={styles.errorBox}>
-                        <Text style={styles.errorText}>{error}</Text>
-                    </View>
-                )}
 
                 {editing ? (
                     <>

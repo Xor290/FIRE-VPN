@@ -25,13 +25,11 @@ export function ServerListScreen({ navigation }: Props) {
     const {
         servers,
         isLoading,
-        error,
         loadServers,
         connectToServer,
         disconnectFromServer,
         connectedServer,
         logout,
-        clearError,
         user,
     } = useAuth();
 
@@ -103,16 +101,6 @@ export function ServerListScreen({ navigation }: Props) {
                         </TouchableOpacity>
                     </View>
                 </View>
-
-                {/* Error */}
-                {error && (
-                    <View style={styles.errorBox}>
-                        <Text style={styles.errorText}>{error}</Text>
-                        <TouchableOpacity onPress={clearError}>
-                            <Text style={styles.errorClose}>X</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
 
                 {/* Section heading */}
                 <Text style={styles.sectionHeading}>SERVEURS DISPONIBLES</Text>

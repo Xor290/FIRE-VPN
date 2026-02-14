@@ -15,26 +15,15 @@ import { Colors, Spacing, BorderRadius } from "../theme";
 import { useAuth } from "../contexts/AuthContext";
 
 export function LoginScreen() {
-    const {
-        login,
-        register,
-        isLoading,
-        error,
-        clearError,
-        savedEmail,
-        apiUrl,
-        setApiUrl,
-    } = useAuth();
+    const { login, register, isLoading, savedEmail } = useAuth();
 
     const [isRegister, setIsRegister] = useState(false);
     const [email, setEmail] = useState(savedEmail);
     const [password, setPassword] = useState("");
     const [username, setUsername] = useState("");
-    const [showApiUrl, setShowApiUrl] = useState(false);
 
     const handleSubmit = () => {
         if (isLoading) return;
-        clearError();
         if (isRegister) {
             register(username, email, password);
         } else {
@@ -44,7 +33,6 @@ export function LoginScreen() {
 
     const toggleMode = () => {
         setIsRegister(!isRegister);
-        clearError();
     };
 
     return (
@@ -68,13 +56,6 @@ export function LoginScreen() {
 
                     {/* Card */}
                     <View style={styles.card}>
-                        {/* Error */}
-                        {error && (
-                            <View style={styles.errorBox}>
-                                <Text style={styles.errorText}>{error}</Text>
-                            </View>
-                        )}
-
                         {/* Username (register only) */}
                         {isRegister && (
                             <View style={styles.field}>
@@ -155,33 +136,6 @@ export function LoginScreen() {
                             </Text>
                         </TouchableOpacity>
                     </View>
-
-                    {/* API URL config */}
-                    <TouchableOpacity
-                        onPress={() => setShowApiUrl(!showApiUrl)}
-                        style={styles.apiToggle}
-                    >
-                        <Text style={styles.apiToggleText}>
-                            {showApiUrl ? "Masquer" : "Configurer"} l'URL du
-                            serveur
-                        </Text>
-                    </TouchableOpacity>
-
-                    {showApiUrl && (
-                        <View style={styles.apiUrlCard}>
-                            <Text style={styles.label}>URL de l'API</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={apiUrl}
-                                onChangeText={setApiUrl}
-                                placeholder="http://10.0.2.2:8080"
-                                placeholderTextColor={Colors.textMuted}
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                keyboardType="url"
-                            />
-                        </View>
-                    )}
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>

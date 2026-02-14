@@ -4,6 +4,7 @@ import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext";
+import { ToastProvider } from "./src/contexts/ToastContext";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { ServerListScreen } from "./src/screens/ServerListScreen";
 import { ConnectedScreen } from "./src/screens/ConnectedScreen";
@@ -58,12 +59,14 @@ function AppNavigator() {
 export default function App() {
     return (
         <SafeAreaProvider>
-            <AuthProvider>
-                <NavigationContainer theme={DarkTheme}>
-                    <StatusBar style="light" />
-                    <AppNavigator />
-                </NavigationContainer>
-            </AuthProvider>
+            <ToastProvider>
+                <AuthProvider>
+                    <NavigationContainer theme={DarkTheme}>
+                        <StatusBar style="light" />
+                        <AppNavigator />
+                    </NavigationContainer>
+                </AuthProvider>
+            </ToastProvider>
         </SafeAreaProvider>
     );
 }

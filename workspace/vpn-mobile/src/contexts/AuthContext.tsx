@@ -10,6 +10,7 @@ import { UserInfo, Server, ConnectionInfo, PeerStatus } from "../types";
 import * as api from "../api/client";
 import ExpoWireguard from "../../modules/expo-wireguard";
 import type { TunnelStatus } from "../../modules/expo-wireguard";
+import { useToast } from "./ToastContext";
 
 const STORAGE_KEYS = {
     token: "@fire_vpn_token",
@@ -169,6 +170,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [state, dispatch] = useReducer(reducer, initialState);
+    const { showToast } = useToast();
 
     useEffect(() => {
         (async () => {
@@ -210,11 +212,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 await AsyncStorage.setItem(STORAGE_KEYS.email, res.user.email);
                 await AsyncStorage.setItem(STORAGE_KEYS.apiUrl, state.apiUrl);
                 dispatch({ type: "LOGIN_SUCCESS", payload: res });
+                showToast("Connexion reussie", "success");
             } catch (e: any) {
-                dispatch({
-                    type: "SET_ERROR",
-                    payload: e.message ?? "Erreur de connexion",
-                });
+                dispatch({ type: "SET_LOADING", payload: false });
+                showToast(e.message ?? "Erreur de connexion", "error");
             }
         },
         [state.apiUrl],
@@ -234,11 +235,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 await AsyncStorage.setItem(STORAGE_KEYS.email, res.user.email);
                 await AsyncStorage.setItem(STORAGE_KEYS.apiUrl, state.apiUrl);
                 dispatch({ type: "LOGIN_SUCCESS", payload: res });
+                showToast("Compte cree avec succes", "success");
             } catch (e: any) {
-                dispatch({
-                    type: "SET_ERROR",
-                    payload: e.message ?? "Erreur d'inscription",
-                });
+                dispatch({ type: "SET_LOADING", payload: false });
+                showToast(e.message ?? "Erreur d'inscription", "error");
             }
         },
         [state.apiUrl],
@@ -281,10 +281,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
             }
         } catch (e: any) {
-            dispatch({
-                type: "SET_ERROR",
-                payload: e.message ?? "Erreur chargement serveurs",
-            });
+            dispatch({ type: "SET_LOADING", payload: false });
+            showToast(e.message ?? "Erreur chargement serveurs", "error");
         }
     }, [state.apiUrl, state.token, state.connectedServer]);
 
@@ -304,11 +302,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     type: "CONNECT_SUCCESS",
                     payload: { server, info },
                 });
+                showToast("Connecte au VPN", "success");
             } catch (e: any) {
-                dispatch({
-                    type: "SET_ERROR",
-                    payload: e.message ?? "Erreur de connexion VPN",
-                });
+                dispatch({ type: "SET_LOADING", payload: false });
+                showToast(e.message ?? "Erreur de connexion VPN", "error");
             }
         },
         [state.apiUrl, state.token],
@@ -326,11 +323,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 state.connectedServer.id,
             );
             dispatch({ type: "DISCONNECT_SUCCESS" });
+            showToast("Deconnecte du VPN", "success");
         } catch (e: any) {
-            dispatch({
-                type: "SET_ERROR",
-                payload: e.message ?? "Erreur de deconnexion",
-            });
+            dispatch({ type: "SET_LOADING", payload: false });
+            showToast(e.message ?? "Erreur de deconnexion", "error");
         }
     }, [state.apiUrl, state.token, state.connectedServer]);
 
@@ -357,11 +353,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     type: "CONNECT_SUCCESS",
                     payload: { server, info },
                 });
+                showToast("Serveur change", "success");
             } catch (e: any) {
-                dispatch({
-                    type: "SET_ERROR",
-                    payload: e.message ?? "Erreur changement de serveur",
-                });
+                dispatch({ type: "SET_LOADING", payload: false });
+                showToast(e.message ?? "Erreur changement de serveur", "error");
             }
         },
         [state.apiUrl, state.token, state.connectedServer],
@@ -374,10 +369,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const user = await api.getProfileInfo(state.apiUrl, state.token);
             dispatch({ type: "UPDATE_PROFILE", payload: user });
         } catch (e: any) {
-            dispatch({
-                type: "SET_ERROR",
-                payload: e.message ?? "Erreur chargement profil",
-            });
+            dispatch({ type: "SET_LOADING", payload: false });
+            showToast(e.message ?? "Erreur chargement profil", "error");
         }
     }, [state.apiUrl, state.token]);
 
@@ -394,11 +387,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     password,
                 );
                 dispatch({ type: "UPDATE_PROFILE", payload: user });
+                showToast("Profil mis a jour", "success");
             } catch (e: any) {
-                dispatch({
-                    type: "SET_ERROR",
-                    payload: e.message ?? "Erreur mise a jour profil",
-                });
+                dispatch({ type: "SET_LOADING", payload: false });
+                showToast(e.message ?? "Erreur mise a jour profil", "error");
             }
         },
         [state.apiUrl, state.token],
@@ -411,11 +403,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await api.deleteProfile(state.apiUrl, state.token);
             await AsyncStorage.removeItem(STORAGE_KEYS.token);
             dispatch({ type: "LOGOUT" });
+            showToast("Compte supprime", "success");
         } catch (e: any) {
-            dispatch({
-                type: "SET_ERROR",
-                payload: e.message ?? "Erreur suppression du compte",
-            });
+            dispatch({ type: "SET_LOADING", payload: false });
+            showToast(e.message ?? "Erreur suppression du compte", "error");
         }
     }, [state.apiUrl, state.token]);
 
