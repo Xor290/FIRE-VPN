@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"path/filepath"
 
 	"vpn-api/config"
 	"vpn-api/models"
@@ -23,8 +25,19 @@ func main() {
 	}
 	db.AutoMigrate(&models.User{}, &models.VPNServer{}, &models.Peer{})
 
-	sshClient := services.NewSSHClient(cfg.SSHKey)
+	// Chemin vers le fichier known_hosts
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("Failed to get home directory: %v", err)
+	}
+	knownHostsPath := filepath.Join(homeDir, ".ssh", "known_hosts")
 
+	// Initialiser le client SSH avec le chemin du known_hosts
+	sshKeyPath := os.Getenv("SSH_KEY_PATH")
+	if sshKeyPath == "" {
+		sshKeyPath = filepath.Join(homeDir, ".ssh", "id_rsa")
+	}
+	sshClient := services.NewSSHClient(sshKeyPath, knownHostsPath)
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
