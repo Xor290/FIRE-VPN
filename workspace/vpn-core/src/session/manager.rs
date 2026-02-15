@@ -47,6 +47,15 @@ impl Session {
         self.config.as_ref()
     }
 
+    pub fn api_base_url(&self) -> &str {
+        &self.client.base_url
+    }
+
+    pub fn clear_connection(&mut self) {
+        self.current_server = None;
+        self.config = None;
+    }
+
     pub fn is_connected(&self) -> bool {
         self.current_server.is_some()
     }
