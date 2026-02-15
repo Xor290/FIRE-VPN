@@ -1,6 +1,7 @@
 use crate::ui::flags::FlagStore;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use vpn_core::api::Server;
 use vpn_core::session::Session;
 
@@ -42,6 +43,8 @@ pub struct VpnApp {
     profile_password: String,
     profile_error: Option<String>,
     profile_success: Option<String>,
+    // Public IP (fetched async after connection)
+    public_ip: Arc<Mutex<Option<String>>>,
 }
 
 impl VpnApp {
@@ -88,6 +91,7 @@ impl VpnApp {
             profile_password: String::new(),
             profile_error: None,
             profile_success: None,
+            public_ip: Arc::new(Mutex::new(None)),
             config,
         }
     }
@@ -216,6 +220,7 @@ impl VpnApp {
                 self.state = AppState::Connected;
                 self.connection_status = format!("Connecté à {}", server_name);
                 self.is_connecting = false;
+                self.fetch_public_ip();
             }
             Err(e) => {
                 self.error_message = Some(format!("Erreur tunnel: {}", e));
@@ -226,21 +231,52 @@ impl VpnApp {
     }
 
     pub fn handle_disconnect(&mut self) {
-        if let Some(session) = &mut self.session {
-            match session.disconnect() {
-                Ok(_) => {
-                    if let Err(e) = crate::vpn::tunnel::stop_tunnel() {
-                        eprintln!("Erreur lors de l'arrêt du tunnel: {}", e);
-                    }
+        // Stop the tunnel and update UI immediately
+        if let Err(e) = crate::vpn::tunnel::stop_tunnel() {
+            eprintln!("Erreur lors de l'arrêt du tunnel: {}", e);
+        }
 
-                    self.state = AppState::ServerList;
-                    self.connection_status = "Déconnecté".to_string();
-                }
-                Err(e) => {
-                    self.error_message = Some(format!("Erreur de déconnexion: {}", e));
+        self.state = AppState::ServerList;
+        self.connection_status = "Déconnecté".to_string();
+        if let Ok(mut ip) = self.public_ip.lock() {
+            *ip = None;
+        }
+
+        // Notify the API in a background thread (non-blocking)
+        if let Some(session) = &mut self.session {
+            if let Some(server) = session.current_server() {
+                let base_url = session.api_base_url().to_string();
+                let token = session.token().to_string();
+                let server_id = server.id;
+                std::thread::spawn(move || {
+                    let client = vpn_core::api::ApiClient::new(&base_url, &token);
+                    if let Err(e) = client.disconnect(server_id) {
+                        eprintln!("Erreur API lors de la déconnexion: {}", e);
+                    }
+                });
+            }
+            session.clear_connection();
+        }
+    }
+
+    fn fetch_public_ip(&self) {
+        let ip_holder = Arc::clone(&self.public_ip);
+        std::thread::spawn(move || {
+            let result = reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(5))
+                .build()
+                .and_then(|c| c.get("https://api.ipify.org").send())
+                .and_then(|r| r.text());
+            if let Ok(ip) = result {
+                if let Ok(mut lock) = ip_holder.lock() {
+                    *lock = Some(ip.trim().to_string());
                 }
             }
-        }
+        });
+    }
+
+    pub fn get_public_ip(&self) -> Option<String> {
+        self.public_ip.lock().ok().and_then(|ip| ip.clone())
     }
 
     pub fn handle_switch_server(&mut self, new_idx: usize) {
@@ -264,6 +300,7 @@ impl VpnApp {
                         self.save_config();
                         self.selected_server = Some(new_idx);
                         self.connection_status = format!("Connecté à {}", server_name);
+                        self.fetch_public_ip();
                     }
                     Err(e) => {
                         self.error_message = Some(format!("Erreur de switch: {}", e));

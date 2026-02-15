@@ -16,6 +16,7 @@ tokio = { version = "1", features = ["full"] }
 anyhow = "1.0"
 
 dirs = "5.0"
+reqwest = { version = "0.12", features = ["blocking"] }
 image = "0.25.9"
 
 [profile.release]

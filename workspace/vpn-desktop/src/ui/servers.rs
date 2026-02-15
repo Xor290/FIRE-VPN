@@ -31,22 +31,12 @@ pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
     ui.horizontal(|ui| {
         ui.add_space(4.0);
 
-        // Left: app name + user email
-        ui.vertical(|ui| {
-            ui.label(
-                egui::RichText::new("SilentGhostVPN")
-                    .size(16.0)
-                    .color(theme::ACCENT)
-                    .strong(),
-            );
-            if let Some(session) = app.get_session() {
-                ui.label(
-                    egui::RichText::new(&session.user().email)
-                        .size(11.0)
-                        .color(theme::TEXT_MUTED),
-                );
-            }
-        });
+        ui.label(
+            egui::RichText::new("SilentGhostVPN")
+                .size(16.0)
+                .color(theme::ACCENT)
+                .strong(),
+        );
 
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             // Logout link
@@ -150,26 +140,28 @@ pub fn render(ui: &mut egui::Ui, app: &mut VpnApp) {
             }
         });
 
-    // ── Footer with separator (like mobile) ────────────────────────────────
-    ui.add_space(4.0);
-    let separator_rect = ui.available_rect_before_wrap();
-    let line = egui::Rect::from_min_size(
-        separator_rect.min,
-        egui::Vec2::new(separator_rect.width(), 1.0),
-    );
-    ui.painter()
-        .rect_filled(line, Rounding::ZERO, theme::BORDER);
-    ui.add_space(12.0);
-
-    let can_connect = app.get_selected_server().is_some() && !app.is_connecting();
-    let btn_text = if app.is_connecting() {
-        "Connexion en cours..."
-    } else {
-        "Se connecter"
-    };
-    if theme::primary_button(ui, btn_text, can_connect) {
-        app.handle_connect();
-    }
+    // ── Footer pinned to bottom ────────────────────────────────────────────
+    ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+        ui.add_space(4.0);
+        let can_connect = app.get_selected_server().is_some() && !app.is_connecting();
+        let btn_text = if app.is_connecting() {
+            "Connexion en cours..."
+        } else {
+            "Se connecter"
+        };
+        if theme::primary_button(ui, btn_text, can_connect) {
+            app.handle_connect();
+        }
+        ui.add_space(4.0);
+        let separator_rect = ui.available_rect_before_wrap();
+        let line_y = separator_rect.max.y;
+        let line = egui::Rect::from_min_size(
+            egui::Pos2::new(separator_rect.min.x, line_y),
+            egui::Vec2::new(separator_rect.width(), 1.0),
+        );
+        ui.painter()
+            .rect_filled(line, Rounding::ZERO, theme::BORDER);
+    });
 }
 
 fn server_card(
